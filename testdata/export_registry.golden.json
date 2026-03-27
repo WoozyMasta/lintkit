@@ -1,0 +1,41 @@
+{
+  "modules": [
+    {
+      "id": "module_alpha",
+      "name": "Module Alpha",
+      "description": "Rules for module_alpha parse pipeline."
+    },
+    {
+      "id": "module_gamma",
+      "name": "Module Gamma",
+      "description": "Rules for module_gamma validation pipeline."
+    }
+  ],
+  "rules": [
+    {
+      "id": "module_alpha.R015",
+      "module": "module_alpha",
+      "code": "PAR015",
+      "message": "macro redefinition",
+      "description": "Warn when macro is redefined.",
+      "default_severity": "warning",
+      "default_enabled": false,
+      "default_options": {
+        "mode": "strict"
+      },
+      "file_kinds": [
+        "source.cfg"
+      ]
+    },
+    {
+      "id": "module_gamma.asset_exists",
+      "module": "module_gamma",
+      "message": "asset exists",
+      "description": "Warn when asset file cannot be resolved.",
+      "default_severity": "warning",
+      "file_kinds": [
+        "module_gamma"
+      ]
+    }
+  ]
+}

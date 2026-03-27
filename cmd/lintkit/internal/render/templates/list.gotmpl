@@ -1,0 +1,99 @@
+<!-- Automatically generated file, do not modify! -->
+
+# {{ .DocumentTitle }}
+
+{{ wrapText .DocumentDescription $.WrapWidth }}
+
+Total rules: {{ len .Rules }}.
+
+{{ if not .Rules }}
+No registered rules.
+{{ else }}
+{{ if .ShowTOC }}
+{{ tocList .Modules }}
+
+{{ end }}
+{{ range .Modules }}
+## {{ .ID }}
+
+{{ if and .Name (ne .Name .ID) }}
+{{ wrapText .Name $.WrapWidth }}
+
+{{ end }}
+{{ if .Description }}
+{{ blockquote (wrapText .Description $.WrapWidth) }}
+
+{{ end }}
+
+{{ range .Scopes }}
+### {{ .ID }}
+{{ if .Description }}
+
+{{ blockquote (wrapText (sentenceCase .Description) $.WrapWidth) }}
+{{ end }}
+
+{{ range .Rules }}
+#### `{{ ruleHeading . }}`
+
+{{ $message := sentenceCase (messageText .) }}
+{{ if $message }}
+{{ wrapText $message $.WrapWidth }}
+
+{{ end }}
+{{ $description := descriptionText . }}
+{{ if and $description (ne $description $message) }}
+{{ blockquote (wrapText $description $.WrapWidth) }}
+
+{{ end }}
+* Rule ID: `{{ .ID }}`
+{{- if .Scope }}
+* Scope: `{{ .Scope }}`
+{{- end }}
+* Severity: `{{ .DefaultSeverity }}`
+* Enabled: `{{ defaultEnabledText .DefaultEnabled }}`{{ if not (hasDefaultEnabled .DefaultEnabled) }} (implicit){{ end }}
+{{- if .FileKinds }}
+* File kinds: {{ fileKinds .FileKinds }}
+{{- end }}
+{{- if .Deprecated }}
+* Deprecated: `true`
+{{- end }}
+
+{{ if .DefaultOptions }}
+Default options:
+```json
+{{ jsonPretty .DefaultOptions }}
+```
+
+{{ end }}
+
+{{ end }}
+{{ end }}
+{{ end }}
+{{ end }}
+
+{{ if .ExampleContent }}
+## Lint Policy Example (`{{ .ExampleFormat }}`)
+
+This config controls lint behavior for one run.
+Global `exclude` skips paths before rule evaluation.
+Rule-level `exclude` disables only that rule entry on matched paths.
+Patterns follow pathrules glob syntax (`*`, `**`, `?`), close to
+gitignore-style path matching.
+`rules` are processed top to bottom; later matched entries override earlier
+entries.
+
+```{{ .ExampleFormat }}
+{{ .ExampleContent }}
+```
+{{ end }}
+
+{{ if and .FooterToolName .FooterToolURL }}
+---
+
+> Generated with
+> [{{ .FooterToolName }}]({{ .FooterToolURL }})
+> version `{{ .FooterVersion }}`
+> commit `{{ .FooterCommit }}`
+{{ end }}
+
+<!-- Automatically generated file, do not modify! -->

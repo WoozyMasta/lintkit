@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/WoozyMasta/schemadoc/refs/heads/master/cmd/schemadoc/doc/config.schema.json
+#
+# generate base linting config schema
+schema: ./cmd/lintkit/internal/app/schema.json
+mod2schema:
+  package: github.com/woozymasta/lintkit/linting
+  type: RunPolicyConfig
+schema2doc:
+  title: linting config reference
+  template: table
+  mode: all
+  format: yaml
+  output: CONFIG.md
+
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/WoozyMasta/schemadoc/refs/heads/master/cmd/schemadoc/doc/config.schema.json
+#
+# check schema for changes
+schema: ./cmd/lintkit/internal/app/schema.json
+check: true
+mod2schema:
+  package: github.com/woozymasta/lintkit/linting
+  type: RunPolicyConfig

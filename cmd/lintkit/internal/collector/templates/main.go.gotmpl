@@ -1,0 +1,161 @@
+package main
+
+import (
+	"errors"
+	"encoding/json"
+	"fmt"
+	"os"
+	"reflect"
+	"strings"
+
+	"github.com/woozymasta/lintkit/lint"
+	linting "github.com/woozymasta/lintkit/linting"
+{{- range .Imports }}
+	{{ .Alias }} "{{ .Path }}"
+{{- end }}
+)
+
+func main() {
+	strictProviders := {{ .StrictProviders }}
+	engine := linting.NewEngine()
+	registrar := collectorRegistrar{
+		engine:          engine,
+		strictProviders: strictProviders,
+	}
+	providers := make([]lint.RuleProvider, 0, {{ len .Imports }})
+{{- range .Imports }}
+	var {{ .Alias }}Provider {{ .Alias }}.LintRulesProvider
+	if provider, ok := any({{ .Alias }}Provider).(lint.RuleProvider); ok {
+		providers = append(providers, provider)
+	} else if provider, ok := any(&{{ .Alias }}Provider).(lint.RuleProvider); ok {
+		providers = append(providers, provider)
+	} else {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"provider %q has LintRulesProvider, but it does not implement lint.RuleProvider\n",
+			"{{ .Path }}",
+		)
+		os.Exit(1)
+	}
+{{- end }}
+
+	for index := range providers {
+		if err := providers[index].RegisterRules(registrar); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "register provider[%d]: %v\n", index, err)
+			os.Exit(1)
+		}
+	}
+
+	snapshot := engine.Snapshot()
+	if err := json.NewEncoder(os.Stdout).Encode(snapshot); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "encode snapshot: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+type collectorRegistrar struct {
+	engine          *linting.Engine
+	strictProviders bool
+}
+
+func (registrar collectorRegistrar) RegisterModule(spec lint.ModuleSpec) error {
+	return registrar.engine.RegisterModule(spec)
+}
+
+func (registrar collectorRegistrar) Register(runners ...lint.RuleRunner) error {
+	for index := range runners {
+		runner := runners[index]
+		if runner == nil {
+			return linting.ErrNilRuleRunner
+		}
+
+		spec := runner.RuleSpec()
+		if existing, exists := registrar.engine.Rule(spec.ID); exists {
+			if equalRuleSpec(existing, spec) {
+				continue
+			}
+
+			if registrar.strictProviders {
+				return fmt.Errorf("%w: %q", linting.ErrDuplicateRuleID, spec.ID)
+			}
+
+			continue
+		}
+
+		if err := registrar.engine.Register(runner); err != nil {
+			if !registrar.strictProviders && (errors.Is(err, linting.ErrDuplicateRuleID) || errors.Is(err, linting.ErrDuplicateRuleCode)) {
+				continue
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func equalRuleSpec(left lint.RuleSpec, right lint.RuleSpec) bool {
+	if strings.TrimSpace(left.ID) != strings.TrimSpace(right.ID) {
+		return false
+	}
+
+	if strings.TrimSpace(left.Module) != strings.TrimSpace(right.Module) {
+		return false
+	}
+
+	if strings.TrimSpace(left.Scope) != strings.TrimSpace(right.Scope) {
+		return false
+	}
+
+	if strings.TrimSpace(left.ScopeDescription) != strings.TrimSpace(right.ScopeDescription) {
+		return false
+	}
+
+	if strings.TrimSpace(left.Code) != strings.TrimSpace(right.Code) {
+		return false
+	}
+
+	if strings.TrimSpace(left.Description) != strings.TrimSpace(right.Description) {
+		return false
+	}
+
+	if strings.TrimSpace(left.Message) != strings.TrimSpace(right.Message) {
+		return false
+	}
+
+	if left.DefaultSeverity != right.DefaultSeverity {
+		return false
+	}
+
+	if !equalBoolPtr(left.DefaultEnabled, right.DefaultEnabled) {
+		return false
+	}
+
+	if !reflect.DeepEqual(left.DefaultOptions, right.DefaultOptions) {
+		return false
+	}
+
+	if len(left.FileKinds) != len(right.FileKinds) {
+		return false
+	}
+
+	if left.Deprecated != right.Deprecated {
+		return false
+	}
+
+	for index := range left.FileKinds {
+		if left.FileKinds[index] != right.FileKinds[index] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func equalBoolPtr(left *bool, right *bool) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+
+	return *left == *right
+}

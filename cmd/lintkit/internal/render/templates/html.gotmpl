@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ html .DocumentTitle }}</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --fg: #24292f;
+      --muted: #57606a;
+      --border: #c6cdd5;
+      --panel: #edf1f5;
+      --code-bg: #edf1f5;
+      --accent: #0969da;
+      --warn: #9a6700;
+      --err: #cf222e;
+      --ok: #1a7f37;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    h1, h2, h3, h4 { line-height: 1.25; margin: 1.4rem 0 0.7rem; }
+    h1 { font-size: 1.9rem; margin-top: 0; }
+    h2 {
+      font-size: 1.35rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.02rem; margin-top: 1.1rem; }
+    h4 { font-size: 0.98rem; margin-top: 0.9rem; }
+    details.module {
+      margin: 0.8rem 0 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    details.module > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 0.7rem 0.9rem;
+      user-select: none;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    details.module > summary::-webkit-details-marker {
+      display: none;
+    }
+    details.module > summary::before {
+      content: "▾";
+      margin-right: 0.45rem;
+      color: var(--muted);
+    }
+    details.module:not([open]) > summary::before {
+      content: "▸";
+    }
+    .module-body {
+      padding: 0.85rem 0.9rem 0.6rem;
+      background: var(--bg);
+    }
+    .intro {
+      color: var(--muted);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .toc {
+      margin: 1rem 0 1.5rem;
+      padding: 0.85rem 1rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .toc ul { margin: 0; padding-left: 1.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .module-description {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .rule {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fbfcfd;
+      padding: 0.9rem 1rem;
+      margin: 0 0 0.9rem;
+    }
+    .scope-heading {
+      margin: 0.85rem 0 0.7rem;
+      padding-bottom: 0.28rem;
+      border-bottom: 1px dashed var(--border);
+      color: var(--muted);
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+    }
+    .rule-title { margin: 0 0 0.35rem; }
+    .rule-description {
+      margin: 0 0 0.65rem;
+      color: var(--muted);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .rich-text p {
+      margin: 0 0 0.55rem;
+    }
+    .rich-text ul {
+      margin: 0.2rem 0 0.6rem;
+      padding-left: 1.2rem;
+    }
+    .rich-text li {
+      margin: 0.15rem 0;
+    }
+    .meta {
+      margin: 0;
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 0.3rem 0.7rem;
+      font-size: 0.94rem;
+    }
+    .meta dt {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .meta dd {
+      margin: 0;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.08rem 0.35rem;
+      font-size: 0.88em;
+    }
+    pre {
+      margin: 0.7rem 0 0;
+      background: #eef2f6;
+      color: #1f2328;
+      border-radius: 8px;
+      border: 1px solid #c6cdd5;
+      padding: 0.8rem 0.95rem;
+      overflow: auto;
+      font-size: 0.9rem;
+    }
+    pre code {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      padding: 0;
+    }
+{{ if and .ExampleFormat .ExampleContent -}}
+    .tok-key { color: #0b5fff; }
+    .tok-string { color: #0a6e31; }
+    .tok-number { color: #b35c00; }
+    .tok-bool,
+    .tok-null { color: #8a2be2; font-weight: 600; }
+    .tok-punc { color: var(--muted); }
+    .tok-comment { color: #6a737d; font-style: italic; }
+{{ end -}}
+    .sev {
+      display: inline-block;
+      padding: 0.05rem 0.48rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: lowercase;
+    }
+    .sev-error { color: var(--err); border-color: #ffccd7; background: #fff8f9; }
+    .sev-warning { color: var(--warn); border-color: #eac54f; background: #fff8c5; }
+    .sev-info, .sev-notice { color: var(--ok); border-color: #9ad9a8; background: #f0fff4; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #9da7b3;
+        --border: #30363d;
+        --panel: #161b22;
+        --code-bg: #161b22;
+        --accent: #58a6ff;
+        --warn: #d29922;
+        --err: #f85149;
+        --ok: #3fb950;
+      }
+      .rule {
+        background: #11161d;
+      }
+      pre {
+        background: #0b0f14;
+        color: #c9d1d9;
+        border-color: #30363d;
+      }
+{{ if and .ExampleFormat .ExampleContent -}}
+      .tok-key { color: #79c0ff; }
+      .tok-string { color: #7ee787; }
+      .tok-number { color: #ffa657; }
+      .tok-bool,
+      .tok-null { color: #d2a8ff; }
+      .tok-punc { color: #8b949e; }
+      .tok-comment { color: #8b949e; }
+{{ end -}}
+      .sev {
+        border-color: #3a434d;
+        background: #1a212a;
+      }
+      .sev-error {
+        color: #ff7b72;
+        border-color: #6e2d32;
+        background: #281216;
+      }
+      .sev-warning {
+        color: #e3b341;
+        border-color: #5a4820;
+        background: #221a0f;
+      }
+      .sev-info, .sev-notice {
+        color: #56d364;
+        border-color: #244a2f;
+        background: #102117;
+      }
+    }
+    @media (max-width: 640px) {
+      .container { padding: 1.2rem 0.85rem 2rem; }
+      .meta { grid-template-columns: 1fr; gap: 0.1rem; }
+      .meta dt { margin-top: 0.35rem; }
+    }
+    footer {
+      margin-top: 2rem;
+      padding: 0.9rem 1rem;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>{{ html .DocumentTitle }}</h1>
+    <p class="intro">
+      {{ html .DocumentDescription }}
+    </p>
+    <p class="intro">
+      Total rules: {{ len .Rules }}.
+    </p>
+
+{{ if .ShowTOC }}
+    <nav class="toc">
+      <strong>Modules</strong>
+      <ul>
+{{- range .Modules }}
+        <li>
+          <a href="#{{ anchor .ID }}">{{ html .ID }}</a> ({{ .RuleCount }})
+{{- if .Scopes }}
+          <ul>
+{{- range .Scopes }}
+            <li><a href="#{{ html .Anchor }}">{{ html .ID }}</a> ({{ .RuleCount }})</li>
+{{- end }}
+          </ul>
+{{- end }}
+        </li>
+{{- end }}
+      </ul>
+    </nav>
+{{ end }}
+
+{{- range .Modules }}
+    <section>
+      <details class="module" open>
+        <summary>{{ html .ID }}</summary>
+        <div class="module-body" id="{{ anchor .ID }}">
+{{- if and .Name (ne .Name .ID) }}
+      <p class="module-description">{{ html .Name }}</p>
+{{- end }}
+{{- if .Description }}
+      <p class="module-description">{{ html .Description }}</p>
+{{- end }}
+
+{{- range .Scopes }}
+      <h3 class="scope-heading" id="{{ html .Anchor }}">{{ html .ID }}</h3>
+{{- if .Description }}
+      <div class="module-description rich-text">{{ richText (sentenceCase .Description) }}</div>
+{{- end }}
+{{- range .Rules }}
+      <article class="rule" id="{{ anchor (ruleHeading .) }}">
+        <h4 class="rule-title"><code>{{ html (ruleHeading .) }}</code></h4>
+{{- $message := sentenceCase (messageText .) }}
+{{- if $message }}
+        <div class="rule-description rich-text">{{ richText $message }}</div>
+{{- end }}
+{{- $description := descriptionText . }}
+{{- if and $description (ne $description $message) }}
+        <div class="rule-description rich-text">{{ richText $description }}</div>
+{{- end }}
+        <dl class="meta">
+          <dt>Rule ID</dt>
+          <dd><code>{{ html .ID }}</code></dd>
+{{- if .Scope }}
+          <dt>Scope</dt>
+          <dd><code>{{ html .Scope }}</code></dd>
+{{- end }}
+          <dt>Severity</dt>
+          <dd>
+            <span class="sev sev-{{ html .DefaultSeverity }}">
+              {{ html .DefaultSeverity }}
+            </span>
+          </dd>
+          <dt>Enabled</dt>
+          <dd>{{ defaultEnabledText .DefaultEnabled }}</dd>
+{{- if .FileKinds }}
+          <dt>File kinds</dt>
+          <dd><code>{{ html (fileKinds .FileKinds) }}</code></dd>
+{{- end }}
+{{- if .Deprecated }}
+          <dt>Deprecated</dt>
+          <dd>true</dd>
+{{- end }}
+        </dl>
+      </article>
+{{- end }}
+{{- end }}
+        </div>
+      </details>
+    </section>
+{{- end }}
+
+{{- if and .ExampleFormat .ExampleContent }}
+    <section>
+      <h2>Lint Policy Example ({{ html .ExampleFormat }})</h2>
+      <p class="module-description">
+        This config controls lint behavior for one run. Global
+        <code>exclude</code> skips paths before rule evaluation.
+        Rule-level <code>exclude</code> disables only that rule entry on
+        matched paths. Patterns follow pathrules glob syntax
+        (<code>*</code>, <code>**</code>, <code>?</code>), close to
+        gitignore-style path matching. <code>rules</code> are processed
+        top to bottom; later matched entries override earlier entries.
+      </p>
+      <pre><code id="example-code" class="lang-{{ html .ExampleFormat }}">{{ html .ExampleContent }}</code></pre>
+    </section>
+{{- end }}
+{{- if and .FooterToolName .FooterToolURL }}
+    <footer>
+      Generated with
+      <a href="{{ html .FooterToolURL }}">{{ html .FooterToolName }}</a>
+      version <code>{{ html .FooterVersion }}</code>
+      commit <code>{{ html .FooterCommit }}</code>
+    </footer>
+{{- end }}
+{{ if and .ExampleFormat .ExampleContent -}}
+  <script>
+    (function () {
+      const code = document.getElementById("example-code");
+      if (!code) {
+        return;
+      }
+
+      const format = (code.className || "").replace("lang-", "").trim().toLowerCase();
+      const text = code.textContent || "";
+      if (text.trim() === "") {
+        return;
+      }
+
+      function escapeHTML(value) {
+        return value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function appendToken(parts, kind, value) {
+        if (value === "") {
+          return;
+        }
+        if (!kind) {
+          parts.push(escapeHTML(value));
+          return;
+        }
+        parts.push('<span class="' + kind + '">' + escapeHTML(value) + '</span>');
+      }
+
+      function highlightJSON(input) {
+        const re = /"(?:\\.|[^"\\])*"(?=\s*:)|"(?:\\.|[^"\\])*"|true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}\[\]:,]/g;
+        let result = [];
+        let index = 0;
+        let match;
+        while ((match = re.exec(input)) !== null) {
+          appendToken(result, "", input.slice(index, match.index));
+          const token = match[0];
+          let kind = "tok-punc";
+          if (token[0] === '"') {
+            kind = token.endsWith(":") ? "tok-key" : "tok-string";
+          } else if (token === "true" || token === "false") {
+            kind = "tok-bool";
+          } else if (token === "null") {
+            kind = "tok-null";
+          } else if (token[0] === "-" || (token[0] >= "0" && token[0] <= "9")) {
+            kind = "tok-number";
+          }
+          appendToken(result, kind, token);
+          index = re.lastIndex;
+        }
+        appendToken(result, "", input.slice(index));
+        return result.join("");
+      }
+
+      function highlightYAML(input) {
+        const lines = input.split("\n");
+        let out = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const commentIndex = line.indexOf("#");
+          let base = line;
+          let comment = "";
+          if (commentIndex >= 0) {
+            base = line.slice(0, commentIndex);
+            comment = line.slice(commentIndex);
+          }
+
+          const keyMatch = base.match(/^(\s*-\s+|\s*)([A-Za-z0-9_.-]+)(\s*:\s*)(.*)$/);
+          if (keyMatch) {
+            out.push(
+              escapeHTML(keyMatch[1]) +
+              '<span class="tok-key">' + escapeHTML(keyMatch[2]) + '</span>' +
+              '<span class="tok-punc">' + escapeHTML(keyMatch[3]) + '</span>' +
+              highlightYAMLValue(keyMatch[4])
+            );
+          } else {
+            out.push(highlightYAMLValue(base));
+          }
+
+          if (comment !== "") {
+            out[out.length - 1] += '<span class="tok-comment">' + escapeHTML(comment) + '</span>';
+          }
+        }
+        return out.join("\n");
+      }
+
+      function highlightYAMLValue(value) {
+        const trimmed = value.trim();
+        if (trimmed === "") {
+          return escapeHTML(value);
+        }
+
+        if (/^(true|false)$/i.test(trimmed)) {
+          return value.replace(trimmed, '<span class="tok-bool">' + escapeHTML(trimmed) + '</span>');
+        }
+        if (/^null$/i.test(trimmed)) {
+          return value.replace(trimmed, '<span class="tok-null">' + escapeHTML(trimmed) + '</span>');
+        }
+        if (/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(trimmed)) {
+          return value.replace(trimmed, '<span class="tok-number">' + escapeHTML(trimmed) + '</span>');
+        }
+        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+          return value.replace(trimmed, '<span class="tok-string">' + escapeHTML(trimmed) + '</span>');
+        }
+
+        const listScalarMatch = value.match(/^(\s*-\s+)(.+)$/);
+        if (listScalarMatch) {
+          return (
+            escapeHTML(listScalarMatch[1]) +
+            '<span class="tok-string">' + escapeHTML(listScalarMatch[2]) + '</span>'
+          );
+        }
+
+        const plainScalarMatch = value.match(/^(\s*)([^{}\[\],].*)$/);
+        if (plainScalarMatch) {
+          return (
+            escapeHTML(plainScalarMatch[1]) +
+            '<span class="tok-string">' + escapeHTML(plainScalarMatch[2]) + '</span>'
+          );
+        }
+
+        return escapeHTML(value);
+      }
+
+      if (format === "json") {
+        code.innerHTML = highlightJSON(text);
+        return;
+      }
+      if (format === "yaml") {
+        code.innerHTML = highlightYAML(text);
+      }
+    })();
+  </script>
+{{ end -}}
+  </main>
+</body>
+</html>

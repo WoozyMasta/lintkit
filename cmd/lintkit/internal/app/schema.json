@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "RunPolicyConfig": {
+      "additionalProperties": false,
+      "description": "RunPolicyConfig is schema-friendly policy model for config files.",
+      "properties": {
+        "exclude": {
+          "description": "Exclude stores optional global exclude path patterns.",
+          "items": {
+            "examples": [
+              "**/vendor/**",
+              "**/*.generated.*"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fail_on": {
+          "default": "error",
+          "description": "FailOn defines minimum diagnostic severity that fails run result.\nEmpty value defaults to \"error\".",
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "notice"
+          ],
+          "examples": [
+            "error"
+          ],
+          "type": "string"
+        },
+        "rules": {
+          "description": "Rules stores ordered selector-based rule settings.\nLater entries override earlier entries.",
+          "items": {
+            "$ref": "#/$defs/RunPolicyRuleConfig"
+          },
+          "type": "array"
+        },
+        "soft_unknown_selectors": {
+          "default": false,
+          "description": "SoftUnknownSelectors enables soft mode for unknown selectors.\nDefault false means unknown selectors fail build/compile.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "RunPolicyRuleConfig": {
+      "additionalProperties": false,
+      "description": "RunPolicyRuleConfig is one ordered rule policy entry.",
+      "properties": {
+        "enabled": {
+          "description": "Enabled overrides rule enable state when set.",
+          "type": "boolean"
+        },
+        "exclude": {
+          "description": "Exclude stores optional path patterns where this entry is not applied.",
+          "items": {
+            "examples": [
+              "**/generated/**",
+              "**/vendor/**"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "options": {
+          "description": "Arbitrary rule options payload for runner-specific behavior."
+        },
+        "rule": {
+          "description": "Rule is rule selector token.\nSupported forms: `*`, `<module>.*`, `<module>.<scope>.*`, `<rule-id>`, `<CODE>`.",
+          "examples": [
+            "*",
+            "module_alpha.*",
+            "module_alpha.parse.*",
+            "MODULE2001",
+            "module_alpha.parse.rule-name"
+          ],
+          "type": "string"
+        },
+        "severity": {
+          "description": "Severity overrides effective diagnostic severity when set.",
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "notice"
+          ],
+          "examples": [
+            "error"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/woozymasta/lintkit/linting/run-policy-config",
+  "$ref": "#/$defs/RunPolicyConfig",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
