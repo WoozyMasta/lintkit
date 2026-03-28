@@ -16,6 +16,9 @@ var (
 	// ErrInvalidWorkDir indicates invalid provider collection working directory.
 	ErrInvalidWorkDir = errors.New("invalid provider collection workdir")
 
+	// ErrInvalidCollectorTempDir indicates invalid collector temporary directory.
+	ErrInvalidCollectorTempDir = errors.New("invalid collector temporary directory")
+
 	// ErrProviderDiscovery indicates provider discovery failure.
 	ErrProviderDiscovery = errors.New("provider discovery failed")
 

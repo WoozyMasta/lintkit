@@ -26,7 +26,7 @@ It works with rule providers and registry snapshots.
 Generate registry snapshot:
 
 ```bash
-go run ./cmd/lintkit snapshot \
+./lintkit snapshot \
   --workdir . \
   docs/lint-rules.snapshot.yaml
 ```
@@ -34,7 +34,7 @@ go run ./cmd/lintkit snapshot \
 Render markdown documentation:
 
 ```bash
-go run ./cmd/lintkit doc \
+./lintkit doc \
   -t list \
   -e yaml \
   docs/lint-rules.snapshot.yaml \
@@ -44,26 +44,31 @@ go run ./cmd/lintkit doc \
 Render policy schema:
 
 ```bash
-go run ./cmd/lintkit schema \
+./lintkit schema \
   docs/lint-rules.snapshot.yaml \
   docs/lint-policy.schema.json
 ```
 
 ## Common workflows
 
+### Snapshot
+
 Use explicit provider modules instead of dependency discovery:
 
 ```bash
-go run ./cmd/lintkit snapshot \
+./lintkit snapshot \
   --module github.com/your/moda \
   --module github.com/your/modb \
   docs/lint-rules.snapshot.yaml
 ```
 
+Snapshot excludes built-in `lintkit` rules by default.
+Use `--include-lintkit-rules` when you want to include them.
+
 Filter collected rules by scope:
 
 ```bash
-go run ./cmd/lintkit snapshot \
+./lintkit snapshot \
   --scope parse \
   --scope validate \
   docs/lint-rules.snapshot.yaml
@@ -72,7 +77,7 @@ go run ./cmd/lintkit snapshot \
 Filter collected rules by stage:
 
 ```bash
-go run ./cmd/lintkit snapshot \
+./lintkit snapshot \
   --stage parse \
   docs/lint-rules.snapshot.yaml
 ```
@@ -84,15 +89,28 @@ Unknown duplicate rule IDs/codes from multiple providers fail snapshot build.
 Use `--soft-providers` to keep first registered rule and continue:
 
 ```bash
-go run ./cmd/lintkit snapshot \
+./lintkit snapshot \
   --soft-providers \
   docs/lint-rules.snapshot.yaml
 ```
 
+Keep generated collector source for debugging:
+
+```bash
+./lintkit snapshot \
+  --temp-dir .tmp \
+  --keep-collector \
+  docs/lint-rules.snapshot.yaml
+```
+
+By default collector source is created in system temp and removed after run.
+
+### Doc
+
 Render HTML report:
 
 ```bash
-go run ./cmd/lintkit doc \
+./lintkit doc \
   -t html \
   docs/lint-rules.snapshot.yaml \
   docs/lint-rules.html
@@ -101,13 +119,13 @@ go run ./cmd/lintkit doc \
 Check generated docs are up to date:
 
 ```bash
-go run ./cmd/lintkit doc \
+./lintkit doc \
   docs/lint-rules.snapshot.yaml \
   docs/lint-rules.md \
   --check
 ```
 
-## Policy schema selector enum
+### Schema
 
 `schema` command can inject allowed selector values
 into generated policy schema for field `rules[].rule`.
@@ -120,7 +138,7 @@ Default mode is `--selector all`.
 Disable selector enum generation:
 
 ```bash
-go run ./cmd/lintkit schema \
+./lintkit schema \
   --selector none \
   docs/lint-rules.snapshot.yaml \
   docs/lint-policy.schema.json
@@ -129,7 +147,7 @@ go run ./cmd/lintkit schema \
 Explicit selector kinds:
 
 ```bash
-go run ./cmd/lintkit schema \
+./lintkit schema \
   --selector module \
   --selector id \
   --selector code \

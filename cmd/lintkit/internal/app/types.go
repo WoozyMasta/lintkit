@@ -32,11 +32,14 @@ type MarkdownRenderOptions struct {
 
 // ProviderCollectOptions groups provider collection input.
 type ProviderCollectOptions struct {
-	WorkDir       string
-	Modules       []string
-	Scopes        []string
-	Stages        []string
-	SoftProviders bool
+	WorkDir             string
+	CollectorTempDir    string
+	Modules             []string
+	Scopes              []string
+	Stages              []string
+	IncludeLintkitRules bool
+	KeepCollector       bool
+	SoftProviders       bool
 }
 
 // SnapshotCommandOptions groups snapshot output behavior.

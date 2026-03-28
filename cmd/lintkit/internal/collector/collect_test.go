@@ -72,7 +72,7 @@ func TestResolvePackagesRequiresGoModuleForDiscovery(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	_, err := ResolvePackages(root, nil)
+	_, err := ResolvePackages(root, nil, false)
 	if !errors.Is(err, ErrNoGoModuleInWorkDir) {
 		t.Fatalf("ResolvePackages() error=%v, want ErrNoGoModuleInWorkDir", err)
 	}
@@ -86,7 +86,7 @@ func TestResolvePackagesWithModulesSkipsDiscovery(t *testing.T) {
 		"github.com/example/a",
 		"github.com/example/a",
 		"github.com/example/b",
-	})
+	}, false)
 	if err != nil {
 		t.Fatalf("ResolvePackages(modules) error: %v", err)
 	}
@@ -236,6 +236,120 @@ func TestNormalizeOptionsFilterTokens(t *testing.T) {
 
 	if len(options.Scopes) != 2 || options.Scopes[0] != "parse" || options.Scopes[1] != "validate" {
 		t.Fatalf("normalizeOptions(scopes)=%v, want [parse validate]", options.Scopes)
+	}
+}
+
+func TestNormalizeOptionsCollectorTempDirRelative(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workDir := filepath.Join(root, "work")
+	if err := os.MkdirAll(workDir, 0o750); err != nil {
+		t.Fatalf("mkdir work dir: %v", err)
+	}
+
+	collectorTempDir := filepath.Join(workDir, "collector-temp")
+	if err := os.MkdirAll(collectorTempDir, 0o750); err != nil {
+		t.Fatalf("mkdir collector temp dir: %v", err)
+	}
+
+	options, err := normalizeOptions(Options{
+		WorkDir:          workDir,
+		CollectorTempDir: "collector-temp",
+	})
+	if err != nil {
+		t.Fatalf("normalizeOptions(collector temp dir) error: %v", err)
+	}
+
+	if options.CollectorTempDir != collectorTempDir {
+		t.Fatalf(
+			"normalizeOptions().CollectorTempDir=%q, want %q",
+			options.CollectorTempDir,
+			collectorTempDir,
+		)
+	}
+}
+
+func TestNormalizeOptionsCollectorTempDirInvalid(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workDir := filepath.Join(root, "work")
+	if err := os.MkdirAll(workDir, 0o750); err != nil {
+		t.Fatalf("mkdir work dir: %v", err)
+	}
+
+	filePath := filepath.Join(workDir, "not-a-dir")
+	if err := os.WriteFile(filePath, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write not-a-dir file: %v", err)
+	}
+
+	_, err := normalizeOptions(Options{
+		WorkDir:          workDir,
+		CollectorTempDir: filePath,
+	})
+	if !errors.Is(err, ErrInvalidCollectorTempDir) {
+		t.Fatalf("normalizeOptions(invalid collector temp dir) error=%v, want ErrInvalidCollectorTempDir", err)
+	}
+}
+
+func TestNormalizeOptionsCollectorTempDirCreatesMissingDirectory(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	workDir := filepath.Join(root, "work")
+	if err := os.MkdirAll(workDir, 0o750); err != nil {
+		t.Fatalf("mkdir work dir: %v", err)
+	}
+
+	options, err := normalizeOptions(Options{
+		WorkDir:          workDir,
+		CollectorTempDir: "collector-temp-missing",
+	})
+	if err != nil {
+		t.Fatalf("normalizeOptions(missing collector temp dir) error: %v", err)
+	}
+
+	info, statErr := os.Stat(options.CollectorTempDir)
+	if statErr != nil {
+		t.Fatalf("stat collector temp dir: %v", statErr)
+	}
+
+	if !info.IsDir() {
+		t.Fatalf("collector temp path=%q is not directory", options.CollectorTempDir)
+	}
+}
+
+func TestFilterDiscoveredProvidersExcludesLintkitByDefault(t *testing.T) {
+	t.Parallel()
+
+	filtered := filterDiscoveredProviders([]string{
+		"github.com/example/alpha/linting",
+		lintkitProviderImportPath,
+		"github.com/example/beta/linting",
+	}, false)
+
+	if len(filtered) != 2 {
+		t.Fatalf("len(filterDiscoveredProviders())=%d, want 2", len(filtered))
+	}
+
+	for index := range filtered {
+		if filtered[index] == lintkitProviderImportPath {
+			t.Fatalf("filtered contains lintkit provider: %v", filtered)
+		}
+	}
+}
+
+func TestFilterDiscoveredProvidersIncludesLintkitWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	filtered := filterDiscoveredProviders([]string{
+		"github.com/example/alpha/linting",
+		lintkitProviderImportPath,
+	}, true)
+
+	if len(filtered) != 2 {
+		t.Fatalf("len(filterDiscoveredProviders(include))=%d, want 2", len(filtered))
 	}
 }
 

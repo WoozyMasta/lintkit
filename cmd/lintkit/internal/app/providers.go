@@ -15,11 +15,14 @@ import (
 // collectRegistrySnapshot resolves provider packages and collects rule snapshot.
 func collectRegistrySnapshot(options ProviderCollectOptions) (lint.RegistrySnapshot, error) {
 	snapshot, err := collector.CollectSnapshot(collector.Options{
-		WorkDir:         options.WorkDir,
-		Modules:         options.Modules,
-		StrictProviders: !options.SoftProviders,
-		Scopes:          options.Scopes,
-		Stages:          options.Stages,
+		WorkDir:             options.WorkDir,
+		CollectorTempDir:    options.CollectorTempDir,
+		IncludeLintkitRules: options.IncludeLintkitRules,
+		KeepCollector:       options.KeepCollector,
+		Modules:             options.Modules,
+		StrictProviders:     !options.SoftProviders,
+		Scopes:              options.Scopes,
+		Stages:              options.Stages,
 	})
 	if err == nil {
 		return snapshot, nil

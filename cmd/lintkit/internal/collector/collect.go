@@ -9,8 +9,14 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/woozymasta/lintkit/lint"
+)
+
+const (
+	// lintkitProviderImportPath stores built-in lintkit provider package path.
+	lintkitProviderImportPath = "github.com/woozymasta/lintkit/linting"
 )
 
 // CollectSnapshot resolves providers and returns collected registry snapshot.
@@ -23,6 +29,7 @@ func CollectSnapshot(options Options) (lint.RegistrySnapshot, error) {
 	packages, err := ResolvePackages(
 		resolvedOptions.WorkDir,
 		resolvedOptions.Modules,
+		resolvedOptions.IncludeLintkitRules,
 	)
 	if err != nil {
 		return lint.RegistrySnapshot{}, fmt.Errorf("%w: %w", ErrProviderDiscovery, err)
@@ -30,6 +37,8 @@ func CollectSnapshot(options Options) (lint.RegistrySnapshot, error) {
 
 	payload, err := RunCollector(
 		resolvedOptions.WorkDir,
+		resolvedOptions.CollectorTempDir,
+		resolvedOptions.KeepCollector,
 		packages,
 		resolvedOptions.StrictProviders,
 		resolvedOptions.Scopes,
@@ -54,6 +63,7 @@ func CollectSnapshot(options Options) (lint.RegistrySnapshot, error) {
 func ResolvePackages(
 	workDir string,
 	modules []string,
+	includeLintkitRules bool,
 ) ([]string, error) {
 	packages := normalizeModuleImportPaths(modules)
 	if len(packages) > 0 {
@@ -69,7 +79,10 @@ func ResolvePackages(
 		return nil, err
 	}
 
-	packages = append(packages, discovered...)
+	packages = append(
+		packages,
+		filterDiscoveredProviders(discovered, includeLintkitRules)...,
+	)
 	packages = normalizeModuleImportPaths(packages)
 	if len(packages) == 0 {
 		return nil, ErrNoProviderPackages
@@ -86,4 +99,26 @@ func discoverImportPaths(workDir string) ([]string, error) {
 	}
 
 	return detectProviderImportPaths(dependencyPackages), nil
+}
+
+// filterDiscoveredProviders applies discovery-time provider exclusions.
+func filterDiscoveredProviders(
+	packages []string,
+	includeLintkitRules bool,
+) []string {
+	if includeLintkitRules || len(packages) == 0 {
+		return packages
+	}
+
+	filtered := make([]string, 0, len(packages))
+	for index := range packages {
+		if packages[index] == lintkitProviderImportPath {
+			continue
+		}
+
+		filtered = append(filtered, packages[index])
+	}
+
+	slices.Sort(filtered)
+	return filtered
 }

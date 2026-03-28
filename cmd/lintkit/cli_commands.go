@@ -41,13 +41,16 @@ type docFlags struct {
 
 // snapshotFlags groups registry snapshot render and provider collect options.
 type snapshotFlags struct {
-	Format        string     `short:"f" long:"format" description:"Snapshot output format (inferred from snapshot extension when omitted)" choice:"json" choice:"yaml"`
-	WorkDir       string     `short:"r" long:"workdir" description:"Working directory for provider collection commands" default:"."`
-	Modules       []string   `short:"m" long:"module" description:"Go package import path with LintRulesProvider (repeatable)"`
-	Scopes        []string   `short:"p" long:"scope" description:"Filter providers by rule scope tokens (repeatable)"`
-	Stages        []string   `short:"g" long:"stage" description:"Filter providers by stage tokens (repeatable); cannot be combined with --scope"`
-	SoftProviders bool       `short:"s" long:"soft-providers" description:"Allow duplicate provider rule conflicts and keep first registered rule"`
-	Check         checkFlags `group:"Output Check"`
+	Format              string     `short:"f" long:"format" description:"Snapshot output format (inferred from snapshot extension when omitted)" choice:"json" choice:"yaml"`
+	WorkDir             string     `short:"r" long:"workdir" description:"Working directory for provider collection commands" default:"."`
+	CollectorTempDir    string     `short:"t" long:"temp-dir" description:"Directory for generated collector source (default: system temp)"`
+	Modules             []string   `short:"m" long:"module" description:"Go package import path with LintRulesProvider (repeatable)"`
+	Scopes              []string   `short:"p" long:"scope" description:"Filter providers by rule scope tokens (repeatable)"`
+	Stages              []string   `short:"g" long:"stage" description:"Filter providers by stage tokens (repeatable); cannot be combined with --scope"`
+	IncludeLintkitRules bool       `short:"i" long:"include-lintkit-rules" description:"Include built-in lintkit rules in auto-discovery and snapshot output"`
+	KeepCollector       bool       `long:"keep-collector" description:"Keep generated collector source file for diagnostics"`
+	SoftProviders       bool       `short:"s" long:"soft-providers" description:"Allow duplicate provider rule conflicts and keep first registered rule"`
+	Check               checkFlags `group:"Output Check"`
 }
 
 // schemaFlags groups policy schema rendering options.
@@ -69,18 +72,24 @@ type snapshotCommand struct {
 
 // Execute runs snapshot subcommand.
 func (command *snapshotCommand) Execute(_ []string) error {
+	includeLintkitRules := command.SnapshotFlags.IncludeLintkitRules
+
 	return command.runner.app.RunSnapshot(
 		command.Args.Output,
 		app.ProviderCollectOptions{
-			WorkDir:       command.SnapshotFlags.WorkDir,
-			Modules:       command.SnapshotFlags.Modules,
-			Scopes:        command.SnapshotFlags.Scopes,
-			Stages:        command.SnapshotFlags.Stages,
-			SoftProviders: command.SnapshotFlags.SoftProviders,
+			WorkDir:             command.SnapshotFlags.WorkDir,
+			CollectorTempDir:    command.SnapshotFlags.CollectorTempDir,
+			IncludeLintkitRules: command.SnapshotFlags.IncludeLintkitRules,
+			KeepCollector:       command.SnapshotFlags.KeepCollector,
+			Modules:             command.SnapshotFlags.Modules,
+			Scopes:              command.SnapshotFlags.Scopes,
+			Stages:              command.SnapshotFlags.Stages,
+			SoftProviders:       command.SnapshotFlags.SoftProviders,
 		},
 		app.SnapshotCommandOptions{
-			Format: command.SnapshotFlags.Format,
-			Check:  command.SnapshotFlags.Check.Check,
+			EnableServiceDiagnostics: &includeLintkitRules,
+			Format:                   command.SnapshotFlags.Format,
+			Check:                    command.SnapshotFlags.Check.Check,
 		},
 	)
 }

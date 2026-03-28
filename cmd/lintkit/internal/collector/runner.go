@@ -17,6 +17,8 @@ import (
 // RunCollector executes generated helper and returns snapshot payload bytes.
 func RunCollector(
 	workDir string,
+	collectorTempDir string,
+	keepCollector bool,
 	packages []string,
 	strictProviders bool,
 	scopes []string,
@@ -32,15 +34,17 @@ func RunCollector(
 		return nil, err
 	}
 
-	tempFile, err := os.CreateTemp(workDir, "lintkit-collect-*.go")
+	tempFile, err := os.CreateTemp(collectorTempDir, "lintkit-collect-*.go")
 	if err != nil {
 		return nil, fmt.Errorf("%w: create temporary collector: %w", ErrProviderCollection, err)
 	}
 
 	tempPath := tempFile.Name()
-	defer func() {
-		_ = os.Remove(tempPath)
-	}()
+	if !keepCollector {
+		defer func() {
+			_ = os.Remove(tempPath)
+		}()
+	}
 
 	if _, err := tempFile.Write(source); err != nil {
 		_ = tempFile.Close()
@@ -72,6 +76,46 @@ func normalizeOptions(options Options) (Options, error) {
 	}
 
 	options.WorkDir = absWorkDir
+	options.CollectorTempDir = strings.TrimSpace(options.CollectorTempDir)
+	if options.CollectorTempDir != "" {
+		resolvedCollectorTempDir := options.CollectorTempDir
+		if !filepath.IsAbs(resolvedCollectorTempDir) {
+			resolvedCollectorTempDir = filepath.Join(
+				absWorkDir,
+				resolvedCollectorTempDir,
+			)
+		}
+
+		if mkdirErr := os.MkdirAll(resolvedCollectorTempDir, 0o750); mkdirErr != nil {
+			return Options{}, fmt.Errorf(
+				"%w: prepare %q: %w",
+				ErrInvalidCollectorTempDir,
+				options.CollectorTempDir,
+				mkdirErr,
+			)
+		}
+
+		collectorInfo, statErr := os.Stat(resolvedCollectorTempDir)
+		if statErr != nil {
+			return Options{}, fmt.Errorf(
+				"%w: resolve %q: %w",
+				ErrInvalidCollectorTempDir,
+				options.CollectorTempDir,
+				statErr,
+			)
+		}
+
+		if !collectorInfo.IsDir() {
+			return Options{}, fmt.Errorf(
+				"%w: %q is not a directory",
+				ErrInvalidCollectorTempDir,
+				options.CollectorTempDir,
+			)
+		}
+
+		options.CollectorTempDir = resolvedCollectorTempDir
+	}
+
 	options.Scopes = normalizeFilterTokens(options.Scopes)
 	options.Stages = normalizeFilterTokens(options.Stages)
 	if len(options.Scopes) > 0 && len(options.Stages) > 0 {

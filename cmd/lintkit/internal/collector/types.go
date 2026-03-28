@@ -9,6 +9,10 @@ type Options struct {
 	// WorkDir is go toolchain working directory. Defaults to ".".
 	WorkDir string
 
+	// CollectorTempDir stores optional directory for generated collector source.
+	// Empty value means system temporary directory.
+	CollectorTempDir string
+
 	// Modules is explicit provider package import list.
 	Modules []string
 
@@ -17,6 +21,12 @@ type Options struct {
 
 	// Stages selects provider rules by stage tokens.
 	Stages []string
+
+	// KeepCollector keeps generated collector source file for diagnostics.
+	KeepCollector bool
+
+	// IncludeLintkitRules keeps built-in lintkit provider in auto-discovery.
+	IncludeLintkitRules bool
 
 	// StrictProviders fails on duplicate conflicts during provider registration.
 	StrictProviders bool
