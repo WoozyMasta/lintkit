@@ -26,7 +26,7 @@ func (runner *Runner) RunDoc(
 		return fmt.Errorf("read snapshot: %w", err)
 	}
 
-	rendered, err := renderSnapshot(snapshot, renderOptions{
+	rendered, warnings, err := renderSnapshot(snapshot, renderOptions{
 		Format:              "markdown",
 		TemplateName:        strings.TrimSpace(flags.Markdown.TemplateName),
 		TemplatePath:        strings.TrimSpace(flags.Markdown.TemplatePath),
@@ -42,6 +42,10 @@ func (runner *Runner) RunDoc(
 	})
 	if err != nil {
 		return err
+	}
+
+	for _, warning := range warnings {
+		_, _ = fmt.Fprintf(runner.Stderr, "warning: %s\n", warning)
 	}
 
 	outputPath = strings.TrimSpace(outputPath)

@@ -18,16 +18,16 @@ import (
 func renderSnapshot(
 	snapshot lint.RegistrySnapshot,
 	options renderOptions,
-) ([]byte, error) {
+) ([]byte, []string, error) {
 	registry := linting.NewRegistry()
 	for index := range snapshot.Modules {
 		if err := registry.RegisterModule(snapshot.Modules[index]); err != nil {
-			return nil, fmt.Errorf("register snapshot modules[%d]: %w", index, err)
+			return nil, nil, fmt.Errorf("register snapshot modules[%d]: %w", index, err)
 		}
 	}
 
 	if err := registry.RegisterMany(snapshot.Rules...); err != nil {
-		return nil, fmt.Errorf("register snapshot rules: %w", err)
+		return nil, nil, fmt.Errorf("register snapshot rules: %w", err)
 	}
 
 	orderedSnapshot := orderedSnapshotForRender(registry.Snapshot())
@@ -35,19 +35,21 @@ func renderSnapshot(
 	switch options.Format {
 	case "json":
 		if options.Pretty {
-			return json.MarshalIndent(orderedSnapshot, "", "  ")
+			data, err := json.MarshalIndent(orderedSnapshot, "", "  ")
+			return data, nil, err
 		}
 
-		return json.Marshal(orderedSnapshot)
+		data, err := json.Marshal(orderedSnapshot)
+		return data, nil, err
 	case "yaml":
 		data, err := yamlutil.Marshal(orderedSnapshot)
 		if err != nil {
-			return nil, fmt.Errorf("marshal snapshot yaml: %w", err)
+			return nil, nil, fmt.Errorf("marshal snapshot yaml: %w", err)
 		}
 
-		return data, nil
+		return data, nil, nil
 	case "markdown":
-		return render.Snapshot(orderedSnapshot, render.Options{
+		renderOptions := render.Options{
 			TemplateName:        options.TemplateName,
 			TemplatePath:        options.TemplatePath,
 			DocumentTitle:       options.DocumentTitle,
@@ -59,9 +61,18 @@ func renderSnapshot(
 			FooterToolURL:       options.FooterToolURL,
 			FooterVersion:       options.FooterVersion,
 			FooterCommit:        options.FooterCommit,
-		})
+		}
+
+		rendered, err := render.Snapshot(orderedSnapshot, renderOptions)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		warnings := render.SnapshotAnchorWarnings(orderedSnapshot, renderOptions)
+
+		return rendered, warnings, nil
 	default:
-		return nil, fmt.Errorf("unsupported render format %q", options.Format)
+		return nil, nil, fmt.Errorf("unsupported render format %q", options.Format)
 	}
 }
 

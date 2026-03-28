@@ -28,7 +28,7 @@ func (runner *Runner) RunSnapshot(
 
 	outputPath = strings.TrimSpace(outputPath)
 	format := ResolveOutputFormat(flags.Format, outputPath)
-	rendered, err := renderSnapshot(snapshot, renderOptions{
+	rendered, _, err := renderSnapshot(snapshot, renderOptions{
 		Format: format,
 		Pretty: true,
 	})

@@ -265,6 +265,49 @@ func TestRunDocTOCAlways(t *testing.T) {
 	}
 }
 
+// TestRunDocAnchorWarnings verifies warnings for overlapping anchor fragments.
+func TestRunDocAnchorWarnings(t *testing.T) {
+	t.Parallel()
+
+	input := testSnapshotJSONWithRules(t, []lint.RuleSpec{
+		{
+			ID:               "module_alpha.parse.rule-a",
+			Module:           "module_alpha",
+			Scope:            "parse",
+			ScopeDescription: "Parser diagnostics.",
+			Code:             "RVCFG2020",
+			Message:          "rule a",
+			DefaultSeverity:  lint.SeverityWarning,
+		},
+		{
+			ID:               "module_beta.parse.rule-b",
+			Module:           "module_beta",
+			Scope:            "parse",
+			ScopeDescription: "Parser diagnostics.",
+			Code:             "RVCFG3020",
+			Message:          "rule b",
+			DefaultSeverity:  lint.SeverityWarning,
+		},
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	exitCode := runWithIO(
+		[]string{"doc", "-", "-"},
+		bytes.NewReader(input),
+		&stdout,
+		&stderr,
+	)
+	if exitCode != 0 {
+		t.Fatalf("runWithIO(doc anchor warnings) exit=%d", exitCode)
+	}
+
+	if !strings.Contains(stderr.String(), "warning: anchor fragment #parse is reused by") {
+		t.Fatalf("expected parse anchor warning, got: %q", stderr.String())
+	}
+}
+
 // TestRunDocModuleMetadata verifies module name/description output.
 func TestRunDocModuleMetadata(t *testing.T) {
 	t.Parallel()

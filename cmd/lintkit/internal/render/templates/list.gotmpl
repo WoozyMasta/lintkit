@@ -24,12 +24,27 @@ No registered rules.
 {{ blockquote (wrapText .Description $.WrapWidth) }}
 
 {{ end }}
+{{ if and $.ShowScopeTOC (gt (len .Scopes) 1) }}
+Rule groups for `{{ .ID }}`:
+
+{{ range .Scopes -}}
+* [{{ .ID }}](#{{ anchor .ID }})
+{{ end }}
+
+{{ end }}
 
 {{ range .Scopes }}
 ### {{ .ID }}
 {{ if .Description }}
 
 {{ blockquote (wrapText (sentenceCase .Description) $.WrapWidth) }}
+{{ end }}
+{{ if gt (len .Rules) 1 }}
+
+Codes:
+{{- range .Rules }}
+[{{ ruleHeading . }}](#{{ anchor (ruleHeading .) }}),
+{{- end }}
 {{ end }}
 
 {{ range .Rules }}

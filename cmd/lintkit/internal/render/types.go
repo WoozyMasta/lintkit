@@ -43,6 +43,9 @@ type View struct {
 
 	// ShowTOC enables module table of contents rendering.
 	ShowTOC bool
+
+	// ShowScopeTOC enables scope-level TOC rendering inside module sections.
+	ShowScopeTOC bool
 }
 
 // Module stores one module section in markdown list view.

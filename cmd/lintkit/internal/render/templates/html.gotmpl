@@ -92,6 +92,23 @@
       max-width: 100%;
       overflow-wrap: anywhere;
     }
+    .scope-toc {
+      margin: 0 0 1rem;
+      padding: 0.65rem 0.8rem;
+    }
+    .scope-codes {
+      margin: -0.35rem 0 0.75rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      overflow-wrap: anywhere;
+    }
+    .scope-codes a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .scope-codes a:hover {
+      text-decoration: underline;
+    }
     .rule {
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -304,11 +321,30 @@
 {{- if .Description }}
       <p class="module-description">{{ html .Description }}</p>
 {{- end }}
+{{- if and $.ShowScopeTOC (gt (len .Scopes) 1) }}
+      <nav class="toc scope-toc">
+        <strong>Rule groups for <code>{{ html .ID }}</code>:</strong>
+        <ul>
+{{- range .Scopes }}
+          <li><a href="#{{ html .Anchor }}">{{ html .ID }}</a> ({{ .RuleCount }})</li>
+{{- end }}
+        </ul>
+      </nav>
+{{- end }}
 
 {{- range .Scopes }}
       <h3 class="scope-heading" id="{{ html .Anchor }}">{{ html .ID }}</h3>
 {{- if .Description }}
       <div class="module-description rich-text">{{ richText (sentenceCase .Description) }}</div>
+{{- end }}
+{{- if gt (len .Rules) 1 }}
+      <p class="scope-codes">
+        Codes:
+{{- range $index, $rule := .Rules }}
+{{- if $index }}, {{ end -}}
+        <a href="#{{ anchor (ruleHeading $rule) }}">{{ html (ruleHeading $rule) }}</a>
+{{- end }}
+      </p>
 {{- end }}
 {{- range .Rules }}
       <article class="rule" id="{{ anchor (ruleHeading .) }}">

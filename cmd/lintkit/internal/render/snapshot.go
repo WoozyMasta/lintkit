@@ -196,8 +196,9 @@ func buildMarkdownView(
 		module.RuleCount++
 	}
 
+	normalizedTOCMode := normalizeTOCMode(tocMode)
 	showTOC := false
-	switch normalizeTOCMode(tocMode) {
+	switch normalizedTOCMode {
 	case "always":
 		showTOC = len(modules) > 0
 	case "auto":
@@ -205,11 +206,100 @@ func buildMarkdownView(
 	}
 
 	return View{
-		Rules:     rules,
-		Modules:   modules,
-		ShowTOC:   showTOC,
-		WrapWidth: normalizeWrapWidth(wrapWidth),
+		Rules:        rules,
+		Modules:      modules,
+		ShowTOC:      showTOC,
+		ShowScopeTOC: normalizedTOCMode != "off",
+		WrapWidth:    normalizeWrapWidth(wrapWidth),
 	}
+}
+
+type snapshotAnchorRef struct {
+	kind  string
+	label string
+}
+
+// SnapshotAnchorWarnings returns deterministic anchor collision warnings.
+func SnapshotAnchorWarnings(
+	snapshot lint.RegistrySnapshot,
+	options Options,
+) []string {
+	view := buildMarkdownView(snapshot, options.WrapWidth, options.TOCMode)
+	htmlTemplate := usesHTMLTemplate(options.TemplateName, options.TemplatePath)
+
+	anchors := make(map[string][]snapshotAnchorRef, len(view.Rules)*2)
+	addAnchor := func(anchor string, kind string, label string) {
+		anchor = strings.TrimSpace(anchor)
+		if anchor == "" {
+			return
+		}
+
+		anchors[anchor] = append(anchors[anchor], snapshotAnchorRef{
+			kind:  kind,
+			label: strings.TrimSpace(label),
+		})
+	}
+
+	for moduleIndex := range view.Modules {
+		module := view.Modules[moduleIndex]
+		addAnchor(markdownHeadingAnchor(module.ID), "module", module.ID)
+
+		for scopeIndex := range module.Scopes {
+			scope := module.Scopes[scopeIndex]
+			scopeAnchor := markdownHeadingAnchor(scope.ID)
+			if htmlTemplate {
+				scopeAnchor = scope.Anchor
+			}
+
+			addAnchor(scopeAnchor, "scope", module.ID+"/"+scope.ID)
+
+			for ruleIndex := range scope.Rules {
+				rule := scope.Rules[ruleIndex]
+				addAnchor(
+					markdownHeadingAnchor(markdownRuleHeading(rule)),
+					"rule",
+					rule.ID,
+				)
+			}
+		}
+	}
+
+	duplicateAnchors := make([]string, 0, 8)
+	for anchor := range anchors {
+		if len(anchors[anchor]) < 2 {
+			continue
+		}
+
+		duplicateAnchors = append(duplicateAnchors, anchor)
+	}
+
+	if len(duplicateAnchors) == 0 {
+		return nil
+	}
+
+	slices.Sort(duplicateAnchors)
+	warnings := make([]string, 0, len(duplicateAnchors))
+	for anchorIndex := range duplicateAnchors {
+		anchor := duplicateAnchors[anchorIndex]
+		refs := anchors[anchor]
+
+		parts := make([]string, 0, len(refs))
+		for refIndex := range refs {
+			ref := refs[refIndex]
+			parts = append(parts, ref.kind+"="+ref.label)
+		}
+
+		warnings = append(
+			warnings,
+			fmt.Sprintf(
+				"anchor fragment #%s is reused by %s",
+				anchor,
+				strings.Join(parts, ", "),
+			),
+		)
+	}
+
+	return warnings
 }
 
 // OrderedSnapshot applies deterministic module/rule ordering.
