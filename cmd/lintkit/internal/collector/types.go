@@ -12,14 +12,14 @@ type Options struct {
 	// Modules is explicit provider package import list.
 	Modules []string
 
-	// StrictProviders fails on duplicate conflicts during provider registration.
-	StrictProviders bool
-
 	// Scopes selects provider rules by rule scope tokens.
 	Scopes []string
 
 	// Stages selects provider rules by stage tokens.
 	Stages []string
+
+	// StrictProviders fails on duplicate conflicts during provider registration.
+	StrictProviders bool
 }
 
 // directoryState stores one source directory provider detection state.
@@ -45,14 +45,14 @@ type collectorTemplateData struct {
 	// Imports stores generated provider package imports.
 	Imports []collectorImport
 
-	// StrictProviders controls duplicate conflict handling mode.
-	StrictProviders bool
-
 	// Scopes stores normalized scope filter tokens.
 	Scopes []string
 
 	// Stages stores normalized stage filter tokens.
 	Stages []string
+
+	// StrictProviders controls duplicate conflict handling mode.
+	StrictProviders bool
 }
 
 // listedPackage stores minimal go list package payload used by discovery.

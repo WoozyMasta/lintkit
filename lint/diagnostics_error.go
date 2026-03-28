@@ -8,14 +8,14 @@ import "fmt"
 
 // DiagnosticsError stores diagnostics that matched fail threshold.
 type DiagnosticsError struct {
-	// Diagnostics stores diagnostics at or above threshold severity.
-	Diagnostics []Diagnostic
-
 	// HighestSeverity stores highest matched severity level.
 	HighestSeverity Severity
 
 	// Threshold stores normalized fail threshold severity.
 	Threshold Severity
+
+	// Diagnostics stores diagnostics at or above threshold severity.
+	Diagnostics []Diagnostic
 }
 
 // Error returns compact threshold violation text.

@@ -34,9 +34,9 @@ type MarkdownRenderOptions struct {
 type ProviderCollectOptions struct {
 	WorkDir       string
 	Modules       []string
-	SoftProviders bool
 	Scopes        []string
 	Stages        []string
+	SoftProviders bool
 }
 
 // SnapshotCommandOptions groups snapshot output behavior.
