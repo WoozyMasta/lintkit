@@ -9,6 +9,12 @@ that these pieces stay aligned.
 The goal is to catch catalog drift early in module tests, before integration
 with an upstream runtime.
 
+For diagnostic assertions, use:
+
+* `SortDiagnostics(items)` for in-place deterministic order.
+* `SortedDiagnostics(items)` for sorted copy.
+* `AssertDiagnosticsEqual(t, got, want)` for order-insensitive assertions.
+
 ## Related docs
 
 See [../README.md](../README.md) for the full architecture and

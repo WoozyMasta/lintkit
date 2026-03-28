@@ -5,6 +5,7 @@
 package linttest
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -133,5 +134,53 @@ func TestValidateCatalogContractNonNormalizedFileKinds(t *testing.T) {
 	err := ValidateCatalogContract("alpha", catalog, ruleSpecs, ruleID)
 	if err == nil || !strings.Contains(err.Error(), "non-normalized file_kinds") {
 		t.Fatalf("ValidateCatalogContract(non-normalized file kinds) error=%v", err)
+	}
+}
+
+func TestValidateCodeCatalogContract(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := lint.NewCodeCatalog(
+		lint.CodeCatalogConfig{
+			Module:     "alpha",
+			CodePrefix: "ALPHA",
+			ScopeDescriptions: map[lint.Stage]string{
+				"parse": "Parser diagnostics.",
+			},
+		},
+		[]lint.CodeSpec{
+			lint.ErrorCodeSpec(1001, "parse", "unexpected token"),
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewCodeCatalog() error: %v", err)
+	}
+
+	if err := ValidateCodeCatalogContract(catalog); err != nil {
+		t.Fatalf("ValidateCodeCatalogContract() error: %v", err)
+	}
+}
+
+func TestValidateCodeCatalogContractEmptyModule(t *testing.T) {
+	t.Parallel()
+
+	_, err := lint.NewCodeCatalog(
+		lint.CodeCatalogConfig{
+			Module:     " ",
+			CodePrefix: "ALPHA",
+		},
+		nil,
+	)
+	if err == nil {
+		t.Fatalf("NewCodeCatalog(empty module) error=nil, want failure")
+	}
+
+	// Build zero-value catalog directly to verify helper behavior.
+	err = ValidateCodeCatalogContract(lint.CodeCatalog{})
+	if !errors.Is(err, ErrEmptyCatalogModule) {
+		t.Fatalf(
+			"ValidateCodeCatalogContract(zero) error=%v, want ErrEmptyCatalogModule",
+			err,
+		)
 	}
 }

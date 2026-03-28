@@ -19,5 +19,18 @@ Quick start
 			LintRuleID,
 		)
 	}
+
+	func TestCodeCatalogContract(t *testing.T) {
+		catalog, err := lint.NewCodeCatalog(...)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		linttest.AssertCodeCatalogContract(t, catalog)
+	}
+
+	func TestDiagnostics(t *testing.T) {
+		linttest.AssertDiagnosticsEqual(t, gotDiagnostics, wantDiagnostics)
+	}
 */
 package linttest

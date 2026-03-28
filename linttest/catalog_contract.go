@@ -29,6 +29,18 @@ func AssertCatalogContract(
 	}
 }
 
+// AssertCodeCatalogContract validates lint.CodeCatalog contract in tests.
+func AssertCodeCatalogContract(
+	tb testing.TB,
+	catalog lint.CodeCatalog,
+) {
+	tb.Helper()
+
+	if err := ValidateCodeCatalogContract(catalog); err != nil {
+		tb.Fatal(err)
+	}
+}
+
 // ValidateCatalogContract validates module lint catalog contract.
 func ValidateCatalogContract(
 	module string,
@@ -159,4 +171,26 @@ func ValidateCatalogContract(
 	}
 
 	return nil
+}
+
+// ValidateCodeCatalogContract validates contract for one lint.CodeCatalog helper.
+func ValidateCodeCatalogContract(catalog lint.CodeCatalog) error {
+	module := strings.TrimSpace(catalog.ModuleSpec().ID)
+	if module == "" {
+		return ErrEmptyCatalogModule
+	}
+
+	return ValidateCatalogContract(
+		module,
+		catalog.CodeSpecs(),
+		catalog.RuleSpecs(),
+		func(code lint.Code) string {
+			ruleID, err := catalog.RuleID(code)
+			if err != nil {
+				return module + ".unknown"
+			}
+
+			return ruleID
+		},
+	)
 }
