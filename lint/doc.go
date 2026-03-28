@@ -11,11 +11,11 @@ It does not execute lint checks.
 RunContext value keys use namespaced form "module.key" to avoid
 cross-module collisions in shared runtime state.
 
-Quick start: define one catalog
+Quick start: define lazy catalog handle without panic
 
 	import "github.com/woozymasta/lintkit/lint"
 
-	var catalog, _ = lint.NewCodeCatalog(lint.CodeCatalogConfig{
+	var catalogHandle = lint.NewCodeCatalogHandle(lint.CodeCatalogConfig{
 		Module:            "module_alpha",
 		CodePrefix:        "ALPHA",
 		ScopeDescriptions: map[lint.Stage]string{"parse": "Parser diagnostics."},
@@ -23,34 +23,45 @@ Quick start: define one catalog
 		lint.ErrorCodeSpec(1001, "parse", "unexpected token"),
 	})
 
-Quick start: build provider from catalog
+Quick start: build unified register+attach binding
 
 	type itemDiagnostic struct {
 		Code    lint.Code
 		Message string
 	}
 
-	provider, _ := lint.NewCodeCatalogProvider(
-		"module_alpha.by_code",
-		catalog,
-		func(item itemDiagnostic) lint.Diagnostic {
-			ruleID, err := catalog.RuleID(item.Code)
-			if err != nil {
-				ruleID = ""
-			}
+	catalog, err := catalogHandle.Catalog()
+	if err != nil {
+		return err
+	}
 
-			return lint.Diagnostic{
-				RuleID:  ruleID,
-				Message: item.Message,
-			}
+	binding, err := lint.NewCodeCatalogBinding(
+		lint.CodeCatalogBindingConfig[itemDiagnostic]{
+			RunValueKey: "module_alpha.by_code",
+			Catalog:     catalog,
+			CodeFromDiagnostic: func(item itemDiagnostic) lint.Code {
+				return item.Code
+			},
+			DiagnosticToLint: func(item itemDiagnostic) lint.Diagnostic {
+				return lint.Diagnostic{
+					Message: item.Message,
+				}
+			},
+			UnknownCodePolicy: lint.UnknownCodeDrop,
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 Quick start: attach precomputed module data to run context
 
-	lint.SetRunValue(&runContext, "module_alpha.ast", astValue)
-	ast, ok := lint.GetRunValue[*AST](&runContext, "module_alpha.ast")
-	_ = ast
-	_ = ok
+	_ = binding.Attach(&runContext, diagnostics)
+
+Quick start: fail utility flow by diagnostics threshold
+
+	if err := lint.ErrorFromDiagnostics(diagnostics, lint.SeverityError); err != nil {
+		return err
+	}
 */
 package lint

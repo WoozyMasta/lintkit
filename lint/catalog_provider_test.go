@@ -202,3 +202,111 @@ func TestAttachCatalogDiagnosticsNilCodeMapper(t *testing.T) {
 		t.Fatal("AttachCatalogDiagnostics(nil mapper) returned true, want false")
 	}
 }
+
+func TestCatalogProviderRegisterRulesByScope(t *testing.T) {
+	t.Parallel()
+
+	provider, err := NewCatalogProvider(
+		"test.catalog.by_code",
+		[]catalogProviderTestItem{
+			{Code: "A001"},
+			{Code: "B001"},
+		},
+		func(item catalogProviderTestItem) RuleSpec {
+			scope := "parse"
+			if item.Code == "B001" {
+				scope = "preprocess"
+			}
+
+			return RuleSpec{
+				ID:              "module_alpha." + item.Code,
+				Module:          "module_alpha",
+				Scope:           scope,
+				Message:         "rule " + item.Code,
+				DefaultSeverity: SeverityWarning,
+			}
+		},
+		func(item catalogProviderTestItem) string {
+			return item.Code
+		},
+		func(diagnostic catalogProviderTestDiagnostic) Diagnostic {
+			return Diagnostic{
+				Severity: SeverityWarning,
+				Message:  diagnostic.Message,
+			}
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewCatalogProvider() error: %v", err)
+	}
+
+	var registrar catalogProviderTestRegistrar
+	if err := provider.RegisterRulesByScope(&registrar, "preprocess"); err != nil {
+		t.Fatalf("RegisterRulesByScope() error: %v", err)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "preprocess" {
+		t.Fatalf(
+			"registered scope=%q, want preprocess",
+			registrar.runners[0].RuleSpec().Scope,
+		)
+	}
+}
+
+func TestCatalogProviderRegisterRulesByStage(t *testing.T) {
+	t.Parallel()
+
+	provider, err := NewCatalogProvider(
+		"test.catalog.by_code",
+		[]catalogProviderTestItem{
+			{Code: "A001"},
+			{Code: "B001"},
+		},
+		func(item catalogProviderTestItem) RuleSpec {
+			scope := "parse"
+			if item.Code == "B001" {
+				scope = "preprocess"
+			}
+
+			return RuleSpec{
+				ID:              "module_alpha." + item.Code,
+				Module:          "module_alpha",
+				Scope:           scope,
+				Message:         "rule " + item.Code,
+				DefaultSeverity: SeverityWarning,
+			}
+		},
+		func(item catalogProviderTestItem) string {
+			return item.Code
+		},
+		func(diagnostic catalogProviderTestDiagnostic) Diagnostic {
+			return Diagnostic{
+				Severity: SeverityWarning,
+				Message:  diagnostic.Message,
+			}
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewCatalogProvider() error: %v", err)
+	}
+
+	var registrar catalogProviderTestRegistrar
+	if err := provider.RegisterRulesByStage(&registrar, Stage("parse")); err != nil {
+		t.Fatalf("RegisterRulesByStage() error: %v", err)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "parse" {
+		t.Fatalf(
+			"registered scope=%q, want parse",
+			registrar.runners[0].RuleSpec().Scope,
+		)
+	}
+}

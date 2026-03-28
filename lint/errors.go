@@ -27,4 +27,10 @@ var (
 
 	// ErrUnknownOverrideRuleID indicates unknown rule id in override map.
 	ErrUnknownOverrideRuleID = errors.New("unknown override rule id")
+
+	// ErrNilCodeCatalogHandle indicates nil lazy code catalog handle.
+	ErrNilCodeCatalogHandle = errors.New("code catalog handle is nil")
+
+	// ErrInvalidDiagnosticSeverity indicates unsupported diagnostic severity.
+	ErrInvalidDiagnosticSeverity = errors.New("invalid diagnostic severity")
 )

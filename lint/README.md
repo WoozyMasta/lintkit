@@ -29,6 +29,15 @@ That is enough for upstream integration.
 * `RuleProvider`/`RuleRegistrar` are registration interfaces.
 * `ComposeProviders(...)` combines nested providers in one declared order.
 
+## Utility helper
+
+Use `ErrorFromDiagnostics(...)` when you need simple CLI/CI fail mode
+without full runtime policy logic:
+
+* pass your diagnostics slice;
+* choose threshold (`error`, `warning`, `info`, `notice`);
+* get `nil` when threshold is not reached, or `*DiagnosticsError` otherwise.
+
 ## Message vs description
 
 `RuleSpec.Message` is the runtime diagnostic text.

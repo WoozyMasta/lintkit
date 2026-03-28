@@ -7,6 +7,7 @@ package lint
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 )
 
@@ -37,6 +38,101 @@ type providerTestRegistrar struct {
 
 	// modules stores registered module metadata list.
 	modules []ModuleSpec
+}
+
+// providerTestScopeAware stores scope-filter aware provider state.
+type providerTestScopeAware struct {
+	// scopes stores latest requested scope filters.
+	scopes []string
+
+	// runners stores runners returned by provider.
+	runners []RuleRunner
+}
+
+// RegisterRules registers all runners without scope filtering.
+func (provider *providerTestScopeAware) RegisterRules(
+	registrar RuleRegistrar,
+) error {
+	return registrar.Register(provider.runners...)
+}
+
+// RegisterRulesByScope registers only runners matched by scope filter.
+func (provider *providerTestScopeAware) RegisterRulesByScope(
+	registrar RuleRegistrar,
+	scopes ...string,
+) error {
+	provider.scopes = append(provider.scopes[:0], scopes...)
+
+	allowed := make(map[string]struct{}, len(scopes))
+	for scopeIndex := range scopes {
+		allowed[scopes[scopeIndex]] = struct{}{}
+	}
+
+	filtered := make([]RuleRunner, 0, len(provider.runners))
+	for runnerIndex := range provider.runners {
+		spec := provider.runners[runnerIndex].RuleSpec()
+		if _, ok := allowed[spec.Scope]; !ok {
+			continue
+		}
+
+		filtered = append(filtered, provider.runners[runnerIndex])
+	}
+
+	return registrar.Register(filtered...)
+}
+
+// RegisterRulesByStage forwards stage filters to scope registration.
+func (provider *providerTestScopeAware) RegisterRulesByStage(
+	registrar RuleRegistrar,
+	stages ...Stage,
+) error {
+	scopeTokens := make([]string, 0, len(stages))
+	for stageIndex := range stages {
+		scopeTokens = append(scopeTokens, string(stages[stageIndex]))
+	}
+
+	return provider.RegisterRulesByScope(registrar, scopeTokens...)
+}
+
+// providerTestScopeOnly stores provider state with scope-only filtering support.
+type providerTestScopeOnly struct {
+	// scopes stores latest requested scope filters.
+	scopes []string
+
+	// runners stores runners returned by provider.
+	runners []RuleRunner
+}
+
+// RegisterRules registers all runners without scope filtering.
+func (provider *providerTestScopeOnly) RegisterRules(
+	registrar RuleRegistrar,
+) error {
+	return registrar.Register(provider.runners...)
+}
+
+// RegisterRulesByScope registers only runners matched by scope filter.
+func (provider *providerTestScopeOnly) RegisterRulesByScope(
+	registrar RuleRegistrar,
+	scopes ...string,
+) error {
+	provider.scopes = append(provider.scopes[:0], scopes...)
+
+	allowed := make(map[string]struct{}, len(scopes))
+	for scopeIndex := range scopes {
+		allowed[scopes[scopeIndex]] = struct{}{}
+	}
+
+	filtered := make([]RuleRunner, 0, len(provider.runners))
+	for runnerIndex := range provider.runners {
+		spec := provider.runners[runnerIndex].RuleSpec()
+		if _, ok := allowed[spec.Scope]; !ok {
+			continue
+		}
+
+		filtered = append(filtered, provider.runners[runnerIndex])
+	}
+
+	return registrar.Register(filtered...)
 }
 
 // Register appends runners to in-memory test storage.
@@ -272,5 +368,344 @@ func TestComposeProvidersForwardsModuleMetadata(t *testing.T) {
 
 	if registrar.modules[0].ID != "module_alpha" {
 		t.Fatalf("modules[0].ID=%q, want module_alpha", registrar.modules[0].ID)
+	}
+}
+
+func TestRegisterRuleProvidersByScope(t *testing.T) {
+	t.Parallel()
+
+	scopeAware := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "first",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.preprocess.a002",
+					Module:          "module_alpha",
+					Scope:           "preprocess",
+					Message:         "second",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByScope(
+		&registrar,
+		[]string{"parse"},
+		scopeAware,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByScope() error: %v", err)
+	}
+
+	if !slices.Equal(scopeAware.scopes, []string{"parse"}) {
+		t.Fatalf("scopeAware.scopes=%v, want [parse]", scopeAware.scopes)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "parse" {
+		t.Fatalf("registered scope=%q, want parse", registrar.runners[0].RuleSpec().Scope)
+	}
+}
+
+func TestRegisterRuleProvidersByStage(t *testing.T) {
+	t.Parallel()
+
+	scopeAware := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "first",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.preprocess.a002",
+					Module:          "module_alpha",
+					Scope:           "preprocess",
+					Message:         "second",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByStage(
+		&registrar,
+		[]Stage{"preprocess"},
+		scopeAware,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByStage() error: %v", err)
+	}
+
+	if !slices.Equal(scopeAware.scopes, []string{"preprocess"}) {
+		t.Fatalf(
+			"scopeAware.scopes=%v, want [preprocess]",
+			scopeAware.scopes,
+		)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "preprocess" {
+		t.Fatalf(
+			"registered scope=%q, want preprocess",
+			registrar.runners[0].RuleSpec().Scope,
+		)
+	}
+}
+
+func TestRegisterRuleProvidersByStageWithModuleSpecWrapper(t *testing.T) {
+	t.Parallel()
+
+	scopeAware := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "first",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	wrapped := WithModuleSpec(
+		scopeAware,
+		ModuleSpec{
+			ID:          "module_alpha",
+			Name:        "Module Alpha",
+			Description: "Rules for module_alpha.",
+		},
+	)
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByStage(
+		&registrar,
+		[]Stage{"parse"},
+		wrapped,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByStage(wrapped) error: %v", err)
+	}
+
+	if len(registrar.modules) != 1 {
+		t.Fatalf("registered modules=%d, want 1", len(registrar.modules))
+	}
+
+	if registrar.modules[0].ID != "module_alpha" {
+		t.Fatalf("modules[0].ID=%q, want module_alpha", registrar.modules[0].ID)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+}
+
+func TestRegisterRuleProvidersByStageWithModuleSpecScopeFallback(t *testing.T) {
+	t.Parallel()
+
+	scopeOnly := &providerTestScopeOnly{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "first",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.preprocess.a002",
+					Module:          "module_alpha",
+					Scope:           "preprocess",
+					Message:         "second",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	wrapped := WithModuleSpec(
+		scopeOnly,
+		ModuleSpec{
+			ID:          "module_alpha",
+			Name:        "Module Alpha",
+			Description: "Rules for module_alpha.",
+		},
+	)
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByStage(
+		&registrar,
+		[]Stage{"parse"},
+		wrapped,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByStage(scope fallback) error: %v", err)
+	}
+
+	if !slices.Equal(scopeOnly.scopes, []string{"parse"}) {
+		t.Fatalf("scopeOnly.scopes=%v, want [parse]", scopeOnly.scopes)
+	}
+
+	if len(registrar.modules) != 1 {
+		t.Fatalf("registered modules=%d, want 1", len(registrar.modules))
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "parse" {
+		t.Fatalf("registered scope=%q, want parse", registrar.runners[0].RuleSpec().Scope)
+	}
+}
+
+func TestComposeProvidersPreservesScopeFiltering(t *testing.T) {
+	t.Parallel()
+
+	left := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "left parse",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+	right := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_beta.preprocess.b001",
+					Module:          "module_beta",
+					Scope:           "preprocess",
+					Message:         "right preprocess",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	composed := ComposeProviders(left, right)
+	if composed == nil {
+		t.Fatal("ComposeProviders(left, right)=nil")
+	}
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByScope(
+		&registrar,
+		[]string{"parse"},
+		composed,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByScope(composed) error: %v", err)
+	}
+
+	if !slices.Equal(left.scopes, []string{"parse"}) {
+		t.Fatalf("left.scopes=%v, want [parse]", left.scopes)
+	}
+
+	if !slices.Equal(right.scopes, []string{"parse"}) {
+		t.Fatalf("right.scopes=%v, want [parse]", right.scopes)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "parse" {
+		t.Fatalf("registered scope=%q, want parse", registrar.runners[0].RuleSpec().Scope)
+	}
+}
+
+func TestComposeProvidersPreservesStageFiltering(t *testing.T) {
+	t.Parallel()
+
+	left := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_alpha.parse.a001",
+					Module:          "module_alpha",
+					Scope:           "parse",
+					Message:         "left parse",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+	right := &providerTestScopeAware{
+		runners: []RuleRunner{
+			providerTestRunner{
+				spec: RuleSpec{
+					ID:              "module_beta.preprocess.b001",
+					Module:          "module_beta",
+					Scope:           "preprocess",
+					Message:         "right preprocess",
+					DefaultSeverity: SeverityWarning,
+				},
+			},
+		},
+	}
+
+	composed := ComposeProviders(left, right)
+	if composed == nil {
+		t.Fatal("ComposeProviders(left, right)=nil")
+	}
+
+	var registrar providerTestRegistrar
+	err := RegisterRuleProvidersByStage(
+		&registrar,
+		[]Stage{"parse"},
+		composed,
+	)
+	if err != nil {
+		t.Fatalf("RegisterRuleProvidersByStage(composed) error: %v", err)
+	}
+
+	if !slices.Equal(left.scopes, []string{"parse"}) {
+		t.Fatalf("left.scopes=%v, want [parse]", left.scopes)
+	}
+
+	if !slices.Equal(right.scopes, []string{"parse"}) {
+		t.Fatalf("right.scopes=%v, want [parse]", right.scopes)
+	}
+
+	if len(registrar.runners) != 1 {
+		t.Fatalf("registered runners=%d, want 1", len(registrar.runners))
+	}
+
+	if registrar.runners[0].RuleSpec().Scope != "parse" {
+		t.Fatalf("registered scope=%q, want parse", registrar.runners[0].RuleSpec().Scope)
 	}
 }

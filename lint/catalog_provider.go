@@ -85,24 +85,41 @@ func NewCatalogProvider[Catalog any, ItemDiagnostic any, Code comparable](
 func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) RegisterRules(
 	registrar RuleRegistrar,
 ) error {
+	return provider.RegisterRulesByScope(registrar)
+}
+
+// RegisterRulesByScope adds prebuilt catalog runners filtered by scope tokens.
+func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) RegisterRulesByScope(
+	registrar RuleRegistrar,
+	scopes ...string,
+) error {
 	if registrar == nil {
 		return ErrNilRuleRegistrar
 	}
 
-	if moduleRegistrar, ok := registrar.(ModuleRegistrar); ok {
-		module := provider.ModuleSpec()
-		if strings.TrimSpace(module.ID) != "" {
-			if err := moduleRegistrar.RegisterModule(module); err != nil {
-				return err
-			}
-		}
+	if err := provider.registerModuleMetadata(registrar); err != nil {
+		return err
 	}
 
-	if len(provider.runners) == 0 {
+	filtered := provider.runnersByScope(scopes...)
+	if len(filtered) == 0 {
 		return nil
 	}
 
-	return registrar.Register(provider.runners...)
+	return registrar.Register(filtered...)
+}
+
+// RegisterRulesByStage adds prebuilt catalog runners filtered by stage tokens.
+func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) RegisterRulesByStage(
+	registrar RuleRegistrar,
+	stages ...Stage,
+) error {
+	scopeTokens := make([]string, 0, len(stages))
+	for stageIndex := range stages {
+		scopeTokens = append(scopeTokens, string(stages[stageIndex]))
+	}
+
+	return provider.RegisterRulesByScope(registrar, scopeTokens...)
 }
 
 // ModuleSpec returns inferred or attached provider module metadata.
@@ -112,6 +129,54 @@ func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) ModuleSpec() Modu
 	}
 
 	return *provider.module
+}
+
+// registerModuleMetadata attaches module descriptor when available.
+func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) registerModuleMetadata(
+	registrar RuleRegistrar,
+) error {
+	moduleRegistrar, ok := registrar.(ModuleRegistrar)
+	if !ok {
+		return nil
+	}
+
+	module := provider.ModuleSpec()
+	if strings.TrimSpace(module.ID) == "" {
+		return nil
+	}
+
+	return moduleRegistrar.RegisterModule(module)
+}
+
+// runnersByScope returns provider runners filtered by scope tokens.
+func (provider CatalogProvider[Catalog, ItemDiagnostic, Code]) runnersByScope(
+	scopes ...string,
+) []RuleRunner {
+	if len(provider.runners) == 0 {
+		return nil
+	}
+
+	scopeSet := normalizeScopeFilters(scopes)
+	if len(scopeSet) == 0 {
+		return provider.runners
+	}
+
+	allowed := make(map[string]struct{}, len(scopeSet))
+	for scopeIndex := range scopeSet {
+		allowed[scopeSet[scopeIndex]] = struct{}{}
+	}
+
+	filtered := make([]RuleRunner, 0, len(provider.runners))
+	for runnerIndex := range provider.runners {
+		scope := strings.TrimSpace(provider.runners[runnerIndex].RuleSpec().Scope)
+		if _, ok := allowed[scope]; !ok {
+			continue
+		}
+
+		filtered = append(filtered, provider.runners[runnerIndex])
+	}
+
+	return filtered
 }
 
 // AttachCatalogDiagnostics indexes diagnostics and stores grouped map in context.
