@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning][].
 ### Removed
 -->
 
+## [0.2.1][] - 2026-03-28
+
+### Added
+
+* `lintkit snapshot --temp-dir`
+  flagto set directory for generated collector source.
+* `lintkit snapshot --keep-collector`
+  flag to keep generated collector source after run for diagnostics.
+* `lintkit snapshot --include-lintkit-rules`
+  flag to include built-in lintkit rules in snapshot output.
+
+### Changed
+
+* `lintkit snapshot` now excludes built-in `lintkit` service rules by default.
+* Generated collector source now uses system temporary directory
+  by default instead of provider workdir.
+
+[0.2.1]: https://github.com/WoozyMasta/lintkit/compare/v0.2.0...v0.2.1
+
 ## [0.2.0][] - 2026-03-28
 
 ### Added
