@@ -44,6 +44,8 @@ type snapshotFlags struct {
 	Format        string     `short:"f" long:"format" description:"Snapshot output format (inferred from snapshot extension when omitted)" choice:"json" choice:"yaml"`
 	WorkDir       string     `short:"r" long:"workdir" description:"Working directory for provider collection commands" default:"."`
 	Modules       []string   `short:"m" long:"module" description:"Go package import path with LintRulesProvider (repeatable)"`
+	Scopes        []string   `short:"p" long:"scope" description:"Filter providers by rule scope tokens (repeatable)"`
+	Stages        []string   `short:"g" long:"stage" description:"Filter providers by stage tokens (repeatable); cannot be combined with --scope"`
 	SoftProviders bool       `short:"s" long:"soft-providers" description:"Allow duplicate provider rule conflicts and keep first registered rule"`
 	Check         checkFlags `group:"Output Check"`
 }
@@ -72,6 +74,8 @@ func (command *snapshotCommand) Execute(_ []string) error {
 		app.ProviderCollectOptions{
 			WorkDir:       command.SnapshotFlags.WorkDir,
 			Modules:       command.SnapshotFlags.Modules,
+			Scopes:        command.SnapshotFlags.Scopes,
+			Stages:        command.SnapshotFlags.Stages,
 			SoftProviders: command.SnapshotFlags.SoftProviders,
 		},
 		app.SnapshotCommandOptions{

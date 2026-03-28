@@ -18,6 +18,8 @@ func collectRegistrySnapshot(options ProviderCollectOptions) (lint.RegistrySnaps
 		WorkDir:         options.WorkDir,
 		Modules:         options.Modules,
 		StrictProviders: !options.SoftProviders,
+		Scopes:          options.Scopes,
+		Stages:          options.Stages,
 	})
 	if err == nil {
 		return snapshot, nil

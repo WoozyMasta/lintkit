@@ -60,6 +60,25 @@ go run ./cmd/lintkit snapshot \
   docs/lint-rules.snapshot.yaml
 ```
 
+Filter collected rules by scope:
+
+```bash
+go run ./cmd/lintkit snapshot \
+  --scope parse \
+  --scope validate \
+  docs/lint-rules.snapshot.yaml
+```
+
+Filter collected rules by stage:
+
+```bash
+go run ./cmd/lintkit snapshot \
+  --stage parse \
+  docs/lint-rules.snapshot.yaml
+```
+
+Do not combine `--scope` and `--stage` in one run.
+
 Provider conflicts are strict by default.
 Unknown duplicate rule IDs/codes from multiple providers fail snapshot build.
 Use `--soft-providers` to keep first registered rule and continue:

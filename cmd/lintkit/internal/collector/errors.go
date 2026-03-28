@@ -21,4 +21,7 @@ var (
 
 	// ErrProviderCollection indicates provider runtime collection failure.
 	ErrProviderCollection = errors.New("provider collection failed")
+
+	// ErrConflictingRuleFilters indicates mixed stage and scope filter input.
+	ErrConflictingRuleFilters = errors.New("conflicting provider rule filters")
 )

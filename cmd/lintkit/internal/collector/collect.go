@@ -32,6 +32,8 @@ func CollectSnapshot(options Options) (lint.RegistrySnapshot, error) {
 		resolvedOptions.WorkDir,
 		packages,
 		resolvedOptions.StrictProviders,
+		resolvedOptions.Scopes,
+		resolvedOptions.Stages,
 	)
 	if err != nil {
 		return lint.RegistrySnapshot{}, fmt.Errorf("%w: %w", ErrProviderCollection, err)

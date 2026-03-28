@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -18,8 +19,15 @@ func RunCollector(
 	workDir string,
 	packages []string,
 	strictProviders bool,
+	scopes []string,
+	stages []string,
 ) ([]byte, error) {
-	source, err := BuildCollectorProgram(packages, strictProviders)
+	source, err := BuildCollectorProgram(
+		packages,
+		strictProviders,
+		scopes,
+		stages,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +72,12 @@ func normalizeOptions(options Options) (Options, error) {
 	}
 
 	options.WorkDir = absWorkDir
+	options.Scopes = normalizeFilterTokens(options.Scopes)
+	options.Stages = normalizeFilterTokens(options.Stages)
+	if len(options.Scopes) > 0 && len(options.Stages) > 0 {
+		return Options{}, ErrConflictingRuleFilters
+	}
+
 	return options, nil
 }
 
@@ -87,4 +101,30 @@ func runGoProgram(workDir string, sourcePath string) ([]byte, error) {
 	}
 
 	return stdout.Bytes(), nil
+}
+
+// normalizeFilterTokens trims, deduplicates and sorts filter tokens.
+func normalizeFilterTokens(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for index := range values {
+		item := strings.TrimSpace(values[index])
+		if item == "" {
+			continue
+		}
+
+		if _, exists := seen[item]; exists {
+			continue
+		}
+
+		seen[item] = struct{}{}
+		out = append(out, item)
+	}
+
+	slices.Sort(out)
+	return out
 }

@@ -31,8 +31,10 @@ Examples:
 > $ %s snapshot --module github.com/woozymasta/rvcfg rules.snapshot.json
 > $ %s snapshot --workdir .. rules.snapshot.json
 > $ %s snapshot --workdir .. -f yaml rules.snapshot.yaml
+> $ %s snapshot --scope parse --scope validate rules.snapshot.json
+> $ %s snapshot --stage parse rules.snapshot.json
 > $ %s snapshot --module github.com/woozymasta/rvcfg --check rules.snapshot.json
-`, programName, programName, programName, programName)),
+`, programName, programName, programName, programName, programName, programName)),
 
 		"doc": strings.TrimSpace(fmt.Sprintf(`
 Render documentation from registry snapshot.

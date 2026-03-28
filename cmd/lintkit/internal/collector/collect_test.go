@@ -143,6 +143,8 @@ func TestBuildCollectorProgramSupportsPointerFallback(t *testing.T) {
 	program, err := BuildCollectorProgram(
 		[]string{"example.com/test/module/linting"},
 		true,
+		nil,
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("BuildCollectorProgram() error: %v", err)
@@ -155,6 +157,85 @@ func TestBuildCollectorProgramSupportsPointerFallback(t *testing.T) {
 
 	if !strings.Contains(text, "reflect.DeepEqual(left.DefaultOptions, right.DefaultOptions)") {
 		t.Fatalf("generated collector missing DefaultOptions compare:\n%s", text)
+	}
+
+	if !strings.Contains(text, "lint.RegisterRuleProviders(registrar, providers...)") {
+		t.Fatalf("generated collector missing RegisterRuleProviders usage:\n%s", text)
+	}
+}
+
+func TestBuildCollectorProgramScopeFilters(t *testing.T) {
+	t.Parallel()
+
+	program, err := BuildCollectorProgram(
+		[]string{"example.com/test/module/linting"},
+		true,
+		[]string{"parse", "validate"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("BuildCollectorProgram(scope) error: %v", err)
+	}
+
+	text := string(program)
+	if !strings.Contains(text, "lint.RegisterRuleProvidersByScope(") {
+		t.Fatalf("generated collector missing scope registration helper:\n%s", text)
+	}
+
+	if !strings.Contains(text, "\"parse\"") || !strings.Contains(text, "\"validate\"") {
+		t.Fatalf("generated collector missing scope filters:\n%s", text)
+	}
+}
+
+func TestBuildCollectorProgramStageFilters(t *testing.T) {
+	t.Parallel()
+
+	program, err := BuildCollectorProgram(
+		[]string{"example.com/test/module/linting"},
+		true,
+		nil,
+		[]string{"parse"},
+	)
+	if err != nil {
+		t.Fatalf("BuildCollectorProgram(stage) error: %v", err)
+	}
+
+	text := string(program)
+	if !strings.Contains(text, "lint.RegisterRuleProvidersByStage(") {
+		t.Fatalf("generated collector missing stage registration helper:\n%s", text)
+	}
+
+	if !strings.Contains(text, "lint.Stage(\"parse\")") {
+		t.Fatalf("generated collector missing stage filters:\n%s", text)
+	}
+}
+
+func TestNormalizeOptionsConflictingFilters(t *testing.T) {
+	t.Parallel()
+
+	_, err := normalizeOptions(Options{
+		WorkDir: ".",
+		Scopes:  []string{"parse"},
+		Stages:  []string{"parse"},
+	})
+	if !errors.Is(err, ErrConflictingRuleFilters) {
+		t.Fatalf("normalizeOptions(conflicting filters) error=%v, want ErrConflictingRuleFilters", err)
+	}
+}
+
+func TestNormalizeOptionsFilterTokens(t *testing.T) {
+	t.Parallel()
+
+	options, err := normalizeOptions(Options{
+		WorkDir: ".",
+		Scopes:  []string{" parse ", "validate", "parse"},
+	})
+	if err != nil {
+		t.Fatalf("normalizeOptions(scopes) error: %v", err)
+	}
+
+	if len(options.Scopes) != 2 || options.Scopes[0] != "parse" || options.Scopes[1] != "validate" {
+		t.Fatalf("normalizeOptions(scopes)=%v, want [parse validate]", options.Scopes)
 	}
 }
 

@@ -14,6 +14,12 @@ type Options struct {
 
 	// StrictProviders fails on duplicate conflicts during provider registration.
 	StrictProviders bool
+
+	// Scopes selects provider rules by rule scope tokens.
+	Scopes []string
+
+	// Stages selects provider rules by stage tokens.
+	Stages []string
 }
 
 // directoryState stores one source directory provider detection state.
@@ -41,6 +47,12 @@ type collectorTemplateData struct {
 
 	// StrictProviders controls duplicate conflict handling mode.
 	StrictProviders bool
+
+	// Scopes stores normalized scope filter tokens.
+	Scopes []string
+
+	// Stages stores normalized stage filter tokens.
+	Stages []string
 }
 
 // listedPackage stores minimal go list package payload used by discovery.

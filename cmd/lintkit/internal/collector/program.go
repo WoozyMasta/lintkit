@@ -14,6 +14,8 @@ import (
 func BuildCollectorProgram(
 	packages []string,
 	strictProviders bool,
+	scopes []string,
+	stages []string,
 ) ([]byte, error) {
 	imports := make([]collectorImport, 0, len(packages))
 	for index := range packages {
@@ -26,6 +28,8 @@ func BuildCollectorProgram(
 	data := collectorTemplateData{
 		Imports:         imports,
 		StrictProviders: strictProviders,
+		Scopes:          scopes,
+		Stages:          stages,
 	}
 
 	var output bytes.Buffer

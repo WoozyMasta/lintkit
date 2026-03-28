@@ -35,6 +35,8 @@ type ProviderCollectOptions struct {
 	WorkDir       string
 	Modules       []string
 	SoftProviders bool
+	Scopes        []string
+	Stages        []string
 }
 
 // SnapshotCommandOptions groups snapshot output behavior.

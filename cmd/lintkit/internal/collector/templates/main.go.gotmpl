@@ -39,12 +39,32 @@ func main() {
 	}
 {{- end }}
 
-	for index := range providers {
-		if err := providers[index].RegisterRules(registrar); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "register provider[%d]: %v\n", index, err)
-			os.Exit(1)
-		}
+{{- if .Stages }}
+	stageFilters := []lint.Stage{
+{{- range .Stages }}
+		lint.Stage({{ printf "%q" . }}),
+{{- end }}
 	}
+	if err := lint.RegisterRuleProvidersByStage(registrar, stageFilters, providers...); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "register providers by stage: %v\n", err)
+		os.Exit(1)
+	}
+{{- else if .Scopes }}
+	scopeFilters := []string{
+{{- range .Scopes }}
+		{{ printf "%q" . }},
+{{- end }}
+	}
+	if err := lint.RegisterRuleProvidersByScope(registrar, scopeFilters, providers...); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "register providers by scope: %v\n", err)
+		os.Exit(1)
+	}
+{{- else }}
+	if err := lint.RegisterRuleProviders(registrar, providers...); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "register providers: %v\n", err)
+		os.Exit(1)
+	}
+{{- end }}
 
 	snapshot := engine.Snapshot()
 	if err := json.NewEncoder(os.Stdout).Encode(snapshot); err != nil {
