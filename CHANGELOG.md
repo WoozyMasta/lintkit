@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning][].
 ### Removed
 -->
 
+## [0.2.2][] - 2026-03-29
+
+### Added
+
+* `lintkit doc` now prints `stderr` warnings for duplicated anchor fragments
+  in generated documentation.
+
+### Changed
+
+* Built-in `doc` templates (`list`, `table`, `html`)
+  now render per-module scope groups with direct links.
+* Rule code lists in scope sections now link to rule entries.
+
+[0.2.2]: https://github.com/WoozyMasta/lintkit/compare/v0.2.1...v0.2.2
+
 ## [0.2.1][] - 2026-03-28
 
 ### Added
