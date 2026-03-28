@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning][].
 ### Removed
 -->
 
+## [0.2.0][] - 2026-03-28
+
+### Added
+
+* Lazy and reusable catalog helpers
+  `lint.CodeCatalogHandle` and `lint.CodeCatalogBinding`.
+* Scope/stage-based provider registration and snapshot collection filters,
+  API helpers and `lintkit snapshot` flags `--scope` and `--stage`.
+* Test helpers in `linttest` for deterministic diagnostics comparison
+  and code-catalog contract checks.
+* `lint.ErrorFromDiagnostics(...)` helper for threshold-based fail mode
+  in utility and CI flows.
+
+### Changed
+
+* `CodeCatalogHandle.RuleSpec(...)` now returns `(RuleSpec, error)` to expose
+  catalog init failures explicitly.
+
+[0.2.0]: https://github.com/WoozyMasta/lintkit/tree/v0.2.0
+
 ## [0.1.0][] - 2026-03-28
 
 ### Added
