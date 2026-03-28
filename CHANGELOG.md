@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning][].
 * `CodeCatalogHandle.RuleSpec(...)` now returns `(RuleSpec, error)` to expose
   catalog init failures explicitly.
 
-[0.2.0]: https://github.com/WoozyMasta/lintkit/tree/v0.2.0
+[0.2.0]: https://github.com/WoozyMasta/lintkit/compare/v0.1.0...v0.2.0
 
 ## [0.1.0][] - 2026-03-28
 
