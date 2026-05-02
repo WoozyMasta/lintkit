@@ -202,7 +202,7 @@ soft_unknown_selectors: false
 
 > Generated with
 > [schemadoc](https://github.com/woozymasta/schemadoc)
-> version `v0.5.1`
-> commit `dcbc2d93686e73dd32d4e52452dae3d140f8df46`
+> version `v0.5.2`
+> commit `765723d161ffc216ae81de59c47b676e3d5c25f5`
 
 <!-- Automatically generated file, do not modify! -->
