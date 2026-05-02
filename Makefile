@@ -217,3 +217,8 @@ _sbom_bin_one:
 		echo ">> SBOM (bin) $$bin"; \
 		$(CYCLO) bin -json -output "$$bin.sbom.json" "$$bin"; \
 	fi
+
+cli-doc:
+	$(OUTPUT_DIR)/$(BINARY)$(NATIVE_EXTENSION) docs md \
+	--template=table --toc --trim-descriptions --program-name=$(BINARY) \
+	$(PKG)/CLI.md

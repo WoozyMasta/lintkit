@@ -15,7 +15,12 @@ It works with rule providers and registry snapshots.
 * `schema` renders JSON Schema for `linting.RunPolicyConfig`.
   Selector enum values are derived from the snapshot rules.
 * `template` prints built-in documentation templates.
+* `help` prints help for commands and flags.
+* `completion` prints shell completion script (`bash`, `zsh`, `pwsh`).
+* `docs` prints generated CLI docs (`man`, `md`, `html`).
 * `version` prints build metadata.
+
+You can read about all the commands and options in detail in the [CLI docs][]
 
 > [!NOTE]
 > Important: `snapshot` executes discovered provider code via `go run`.
@@ -163,3 +168,5 @@ Explicit selector kinds:
 * [../../registry/README.md](../../registry/README.md)
 * [../../lint/README.md](../../lint/README.md)
 * [../../linting/README.md](../../linting/README.md)
+
+[CLI docs]: CLI.md
