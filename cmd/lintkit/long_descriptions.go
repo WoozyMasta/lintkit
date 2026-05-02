@@ -17,8 +17,8 @@ Print built-in documentation template text (`+"`list`"+`, `+"`table`"+`, or `+"`
 Use it as a starting point for a custom external template file.
 
 Examples:
-> $ %[1]s template > list.gotmpl
-> $ %[1]s template -t html docs.html.gotmpl
+  - %[1]s template > list.gotmpl
+  - %[1]s template -t html docs.html.gotmpl
 `, programName)),
 
 		"snapshot": strings.TrimSpace(fmt.Sprintf(`
@@ -29,10 +29,10 @@ Built-in `+"`lintkit`"+` rules are excluded by default;
 use `+"`--include-lintkit-rules`"+` to include them.
 
 Examples:
-> $ %[1]s snapshot --module github.com/woozymasta/rvcfg rules.snapshot.json
-> $ %[1]s snapshot --scope parse --scope validate rules.snapshot.json
-> $ %[1]s snapshot --temp-dir .tmp --keep-collector rules.snapshot.json
-> $ %[1]s snapshot --include-lintkit-rules rules.snapshot.json
+  - %[1]s snapshot --module github.com/woozymasta/rvcfg rules.snapshot.json
+  - %[1]s snapshot --scope parse --scope validate rules.snapshot.json
+  - %[1]s snapshot --temp-dir .tmp --keep-collector rules.snapshot.json
+  - %[1]s snapshot --include-lintkit-rules rules.snapshot.json
 `, programName)),
 
 		"doc": strings.TrimSpace(fmt.Sprintf(`
@@ -40,9 +40,9 @@ Render documentation from registry snapshot.
 Reads snapshot from file argument or stdin; writes docs to file argument or stdout.
 
 Examples:
-> $ %[1]s doc rules.snapshot.json docs/lint-rules.md
-> $ %[1]s doc -t html rules.snapshot.json docs/lint-rules.html
-> $ %[1]s doc rules.snapshot.json docs/lint-rules.md --check
+  - %[1]s doc rules.snapshot.json docs/lint-rules.md
+  - %[1]s doc -t html rules.snapshot.json docs/lint-rules.html
+  - %[1]s doc rules.snapshot.json docs/lint-rules.md --check
 `, programName)),
 
 		"schema": strings.TrimSpace(fmt.Sprintf(`
@@ -56,9 +56,33 @@ Selector enum modes (`+"`--selector`"+`, repeatable):
 If `+"`none`"+` is present it has priority; if `+"`all`"+` is present it has priority over explicit kinds.
 
 Examples:
-> $ %[1]s schema rules.snapshot.yaml docs/lint-policy.schema.json
-> $ %[1]s schema -s none rules.snapshot.yaml docs/lint-policy.schema.json
-> $ %[1]s schema -s module -s code rules.snapshot.yaml docs/lint-policy.schema.json
+  - %[1]s schema rules.snapshot.yaml docs/lint-policy.schema.json
+  - %[1]s schema -s none rules.snapshot.yaml docs/lint-policy.schema.json
+  - %[1]s schema -s module -s code rules.snapshot.yaml docs/lint-policy.schema.json
+`, programName)),
+
+		"help": strings.TrimSpace(fmt.Sprintf(`
+Print help for CLI and subcommands.
+
+Examples:
+  - %[1]s help
+  - %[1]s help doc
+`, programName)),
+
+		"docs": strings.TrimSpace(fmt.Sprintf(`
+Print generated CLI documentation in selected format.
+Supported formats are command subcommands: `+"`man`"+`, `+"`md`"+`, `+"`html`"+`.
+
+Examples:
+  - %[1]s docs md
+  - %[1]s docs html > lintkit.cli.html
+`, programName)),
+
+		"version": strings.TrimSpace(fmt.Sprintf(`
+Print CLI build and version metadata.
+
+Examples:
+  - %[1]s version
 `, programName)),
 	}
 }

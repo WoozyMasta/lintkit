@@ -10,7 +10,6 @@ import (
 
 // cliOptions describes lintkit CLI flags and subcommands.
 type cliOptions struct {
-	Version  versionCommand  `command:"version" description:"Print version information"`
 	Doc      docCommand      `command:"doc" description:"Render documentation from registry snapshot"`
 	Schema   schemaCommand   `command:"schema" description:"Render JSON Schema from registry snapshot"`
 	Template templateCommand `command:"template" description:"Print built-in documentation template"`
@@ -19,12 +18,12 @@ type cliOptions struct {
 
 // markdownRenderFlags groups markdown template and layout flags.
 type markdownRenderFlags struct {
-	TemplateName  string `short:"t" long:"template" description:"Built-in documentation template style" choice:"list" choice:"table" choice:"html" default:"list"`
+	TemplateName  string `short:"t" long:"template" description:"Built-in documentation template style" choices:"list;table;html" default:"list"`
 	TemplatePath  string `short:"p" long:"template-file" description:"Path to external template file (.gotmpl), overrides built-in template"`
 	Title         string `short:"T" long:"title" description:"Custom document title in rendered output"`
 	Description   string `short:"D" long:"description" description:"Custom document description in rendered output"`
-	ExampleFormat string `short:"e" long:"example-format" description:"Append policy example block to markdown output" choice:"json" choice:"yaml"`
-	TOCMode       string `short:"o" long:"toc" description:"TOC mode for markdown output" choice:"auto" choice:"always" choice:"off" default:"auto"`
+	ExampleFormat string `short:"e" long:"example-format" description:"Append policy example block to markdown output" choices:"json;yaml"`
+	TOCMode       string `short:"o" long:"toc" description:"TOC mode for markdown output" choices:"auto;always;off" default:"auto"`
 	WrapWidth     int    `short:"w" long:"wrap" description:"Wrap width for plain text fields in markdown output" default:"80"`
 }
 
@@ -41,7 +40,7 @@ type docFlags struct {
 
 // snapshotFlags groups registry snapshot render and provider collect options.
 type snapshotFlags struct {
-	Format              string     `short:"f" long:"format" description:"Snapshot output format (inferred from snapshot extension when omitted)" choice:"json" choice:"yaml"`
+	Format              string     `short:"f" long:"format" description:"Snapshot output format (inferred from snapshot extension when omitted)" choices:"json;yaml"`
 	WorkDir             string     `short:"r" long:"workdir" description:"Working directory for provider collection commands" default:"."`
 	CollectorTempDir    string     `short:"t" long:"temp-dir" description:"Directory for generated collector source (default: system temp)"`
 	Modules             []string   `short:"m" long:"module" description:"Go package import path with LintRulesProvider (repeatable)"`
@@ -55,8 +54,8 @@ type snapshotFlags struct {
 
 // schemaFlags groups policy schema rendering options.
 type schemaFlags struct {
-	Format   string     `short:"f" long:"format" description:"Schema output format (inferred from output extension when omitted)" choice:"json" choice:"yaml"`
-	Selector []string   `short:"s" long:"selector" description:"Selector enum kinds (repeatable)" choice:"all" choice:"none" choice:"module" choice:"id" choice:"code"`
+	Format   string     `short:"f" long:"format" description:"Schema output format (inferred from output extension when omitted)" choices:"json;yaml"`
+	Selector []string   `short:"s" long:"selector" description:"Selector enum kinds (repeatable)" choices:"all;none;module;id;code"`
 	Check    checkFlags `group:"Output Check"`
 }
 
@@ -163,19 +162,10 @@ type templateCommand struct {
 		Output string `positional-arg-name:"output" description:"Output template file path (optional; stdout when omitted)"`
 	} `positional-args:"yes"`
 
-	TemplateType string `short:"t" long:"template" description:"Built-in documentation template style" choice:"list" choice:"table" choice:"html" default:"list"`
+	TemplateType string `short:"t" long:"template" description:"Built-in documentation template style" choices:"list;table;html" default:"list"`
 }
 
 // Execute runs template subcommand.
 func (command *templateCommand) Execute(_ []string) error {
 	return command.runner.app.RunTemplate(command.TemplateType, command.Args.Output)
-}
-
-// versionCommand prints version information.
-type versionCommand struct{}
-
-// Execute runs version subcommand.
-func (command *versionCommand) Execute(_ []string) error {
-	printVersionInfo()
-	return nil
 }

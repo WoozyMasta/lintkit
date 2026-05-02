@@ -10,8 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/jessevdk/go-flags"
+	"github.com/woozymasta/flags"
 	"github.com/woozymasta/lintkit/cmd/lintkit/internal/app"
 )
 
@@ -21,6 +22,27 @@ type cliRunner struct {
 	stdout      io.Writer
 	stderr      io.Writer
 	programName string
+}
+
+var (
+	Version    = "dev"
+	Commit     = "unknown"
+	BuildTime  time.Time
+	URL        = "https://github.com/woozymasta/lintkit"
+	_buildTime string
+)
+
+func init() {
+	if _buildTime == "" {
+		return
+	}
+
+	parsed, err := time.Parse(time.RFC3339, _buildTime)
+	if err != nil {
+		return
+	}
+
+	BuildTime = parsed.UTC()
 }
 
 func main() {
@@ -67,7 +89,7 @@ func (runner *cliRunner) run(args []string) int {
 
 	var flagsErr *flags.Error
 	if errors.As(err, &flagsErr) {
-		if flagsErr.Type == flags.ErrHelp {
+		if flagsErr.Type == flags.ErrHelp || flagsErr.Type == flags.ErrVersion {
 			writeCLIError(runner.stdout, err)
 			return 0
 		}

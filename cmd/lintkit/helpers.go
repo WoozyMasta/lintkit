@@ -7,8 +7,9 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 
-	"github.com/jessevdk/go-flags"
+	"github.com/woozymasta/flags"
 )
 
 // parseCLIArgs parses CLI args and triggers selected subcommand execution.
@@ -19,8 +20,38 @@ func parseCLIArgs(args []string, runner *cliRunner) error {
 	options.Schema.runner = runner
 	options.Template.runner = runner
 
-	parser := flags.NewParser(options, flags.HelpFlag)
+	parser := flags.NewParser(
+		options,
+		flags.HelpFlag|
+			flags.VersionFlag|
+			flags.HelpCommand|
+			flags.VersionCommand|
+			flags.CompletionCommand|
+			flags.DocsCommand|
+			flags.KeepDescriptionWhitespace|
+			flags.PrintHelpOnInputErrors|
+			flags.ShowRepeatableInHelp|
+			flags.DetectShellFlagStyle|
+			flags.DetectShellEnvStyle,
+	)
 	parser.Name = runner.programName
+	fields := flags.VersionFieldsCore
+	if BuildTime.IsZero() {
+		fields &^= flags.VersionFieldBuilt
+	}
+
+	parser.SetVersionFields(fields)
+	parser.SetVersionInfo(flags.VersionInfo{
+		File:         os.Args[0],
+		Version:      Version,
+		Revision:     Commit,
+		RevisionTime: BuildTime,
+		URL:          URL,
+	})
+	if err := parser.EnsureBuiltinCommands(); err != nil {
+		return err
+	}
+
 	applyCommandLongDescriptions(parser, runner.programName)
 
 	_, err := parser.ParseArgs(args)
